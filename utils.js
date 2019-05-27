@@ -2705,10 +2705,10 @@ _package("canvas", _, function () {
                     case "uniform":
                         callback(Math.abs(r - index));
                         break;
-                    case "sine":
+                    case "sin":
                         callback(Math.abs(r * Math.sin(0.5 * index * Math.PI / r)));
                         break;
-                    case "sine":
+                    case "cos":
                         callback(Math.abs(r * Math.cos(0.5 * index * Math.PI / r)));
                         break;
                     default:
