@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap"></div>
+    <script src="utils.js"></script>
+    <script>
+        var mc = _.canvas({
+            el: ".wrap",
+            padding: 10
+        })
+
+        var arr = [
+            mc.lefttop, mc.center, mc.righttop, mc.rightbottom, mc.leftbottom
+        ]
+        mc.point(arr)
+        // mc.line(arr)
+        //横竖交叉点
+        //cross point
+        var crossPoints = function (row, col) {
+            col == 2
+            mc.lefttop[0]
+
+            var width = mc.righttop[0] - mc.lefttop[0]
+            var colgap = width / (col - 1)
+
+
+            var row = []
+            for (var i = 0; i < col - 1; i++) {
+                row.push([mc.lefttop[0] + colgap * i, mc.lefttop[1]])
+            }
+        }
+
+        var d = mc.dis(...arr)
+        console.log(d)
+
+        // var i = 0
+        // var loop = function () {
+        //     // callback();
+        //     mc.point(arr[i++])
+        //     requestAnimationFrame(loop)
+        // }
+        // loop()
+
+        var arr = mc.cutpoints(mc.center, 100, 10)
+
+        var cs = mc.cutpoints(mc.center, 30, 3)
+
+        mc.point(arr, true)
+
+        var arr2 = [],
+            len = arr.length;
+        var c = 10
+        while (c-- > 0) {
+            arr.forEach(function (t) {
+                var index = Math.floor(len * Math.random())
+                arr2.push(arr[index])
+            })
+        }
+
+        // mc.line(arr2, true)
+        // mc.ani("point", arr, 500)
+        // mc.ani("line", arr, 700)
+        // mc.ani("ray", arr, 800,cs)
+
+        // mc.link(arr,"arc")
+        // mc.link({
+        //     ps: arr,
+        //     shape: "arc",
+        //     sAngle: 0.5 * Math.PI
+        // })
+
+        var index = 0
+        var ani = function () {
+            var arr = mc.cutpoints(mc.center, 100 - index, 10, null, null, index)
+            // var arr = mc.cutpoints(mc.center, 100, 10,null,null,index*0.1)
+            // var arr = mc.cutpoints(mc.center, 100-index, 10)
+            mc.clear2()
+
+            mc.link({
+                points: arr,
+                shape: "line", //"arc",
+                // sAngle: index, //0.5 * Math.PI+
+                // eAngle: index +  Math.PI/180
+            })
+            index++
+            if (index >= 200) index = 0
+            requestAnimationFrame(ani)
+        }
+
+        // ani()
+
+
+
+        mc.loop(function (r) {
+            mc.clear()
+            mc.regularPloygon(mc.center, r, 6, 0.05 * index / Math.PI)
+        }, 100, "cos")
+
+        // mc.ani({
+        //     type:"point",
+        //     data:[cs,arr],
+        //     duration:1000
+        // })
+    </script>
+</body>
+
+</html>
