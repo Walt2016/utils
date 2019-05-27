@@ -2658,10 +2658,10 @@ _package("canvas", _, function () {
         //toVector
         //向量 vector 以this为原点坐标 表示向量 p
         toV: function (p) {
-            return p ? _vector({
+            return p ? _.vector({
                 x: p.x - this.x,
                 y: p.y - this.y
-            }) : _vector({
+            }) : _.vector({
                 x: this.x - this.o.x,
                 y: this.y - this.o.y
             })
