@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .table td,
+        .table th {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="table"></div>
+
+    <div class="wrap"></div>
+    <script src="utils.js"></script>
+    <script>
+        // _.thead("UUU")  =>  _.thead(_.tr(_.th("UUU")))
+
+        
+        _.query(".wrap").appendChild(_.thead(_.tr("ddd")))
+
+        // _.query(".wrap").appendChild(_.thead(["111", 333, 444]))
+
+        var tr = _.tr(_.th("U+"))
+        var thead = _.thead(tr)
+        for (var i = 0; i < 16; i++) {
+            var th = _.th(i.toString(16).toUpperCase())
+            tr.appendChild(th)
+        }
+
+        var len = 100;
+        var rows = []
+        var star = 0x4e00
+        var end = 0x65b0
+        var r = 0;
+        while (star < end) {
+            rows[r] = _.tr(_.td(star.toString(16)))
+            for (var i = 0; i < 16; i++) {
+                var td = _.td(String.fromCharCode(star + i))
+                rows[r].appendChild(td)
+            }
+            star += 16
+            r++;
+        }
+        var tbody = _.tbody(rows)
+        var table = _.table([thead, tbody]);
+        _.query(".table").appendChild(table);
+    </script>
+</body>
+
+</html>

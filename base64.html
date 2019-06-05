@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- <meta http-equiv="Content-Type" content="text/html; charset=gb2312" /> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="result"></div>
+    <script src="utils.js"></script>
+    <script>
+        var str = _.base64.encode("你testhahha哈哈")
+        var result = _.query(".result")
+        result.innerHTML = str
+
+        result.innerHTML += "<br>" + _.base64.decode("5L2gdGVzdGhhaGhh5ZOI5ZOI")
+
+        result.innerHTML += "<br>" +  _.quotedprintable.decode("=E5=B8=88-=E6=B7=B1=E5=9C=B3-=E5=BC=A0=E6=B5=B7=E9=B9=8F")
+    
+        //页面文件存储使用的字符集和Meta标签中指定的字符集不一致导致的问题。Aptana的编辑器默认情况下使用UTF-8字符集
+        result.innerHTML+="<br>"+_.url.decode("%E6%B6%93%EE%85%9F%E6%9E%83")
+        result.innerHTML+="<br>"+_.url.decode("%E4%B8%AD%E6%96%87")
+        result.innerHTML+="<br>"+_.url.encode("中文")
+
+        result.innerHTML+="<br>"+ encodeURI("中文")
+
+        result.innerHTML+="<br>"+ _.unicode.encode("中文niihai你好啊 ，第三方第三方")
+        result.innerHTML+="<br>"+ _.unicode.decode("4e2d65876e69696861694f60597d554a20ff0c7b2c4e0965b97b2c4e0965b9")
+        result.innerHTML+="<br>"+ _.unicode.decode("%4e2d%6587%6e%69%69%68%61%69%4f60%597d%554a%20%ff0c%7b2c%4e09%65b9%7b2c%4e09%65b9")
+        result.innerHTML+="<br>"+_.url.decode("http%3a%2f%2fwww.example.com%2ftest_form.php%2f%22%3e%3cscript%3ealert(%27hacked%27)%3c%2fscript%3e")
+    
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="wrap"></div>
+    <script src="utils.js"></script>
+    <script>
+        var tag = "thead tr ";
+        var wrap= _.query(".wrap");
+
+        // _.table([[1,2,3],[1,2,3],[222,33,4]])
+
+        // _.tr()
+
+       console.log(_.div([1, 2, 3])) 
+       console.log(_.td(['1', 2, 3]))   
+       console.log(_.tr(['1', 2, 3]))   
+
+
+    //    console.log(_.div(_.div("test")))   
+
+       var table=_.table(_.tr(_.td("test")))
+       wrap.appendChild(table)
+       
+
+        var thead = _.thead(["1", 3343, 4])
+
+        var thead = _.thead(["1", 3343, 4, _.div("test")])
+
+        var tbody = _.tbody(["dfdf", "rere", "erer"])
+
+        var table = _.table([thead, tbody])
+        //    _.query(".wrap").appendChild(table)
+        _.query(".wrap").appendChild(table)
+
+        // var txt = "tddd"
+        // var tags = tag.split(" ")
+        // var len = tags.length
+        // //     var el=document.createElement(tags[0]);
+        // //    var parent=el
+
+        // var el, parent;
+        // tags.forEach(function (t, i) {
+        //     var tmp = document.createElement(t);
+        //     // if (i == 0) {
+        //     //     parent = el = tmp
+        //     // } else if (i + 1 == len) {
+        //     //     tmp.innerHTML = txt
+        //     //     parent.appendChild(tmp)
+        //     // } else {
+        //     //     parent.appendChild(tmp)
+        //     //     parent = tmp
+        //     // }
+        //     if (i == 0) {
+        //         parent = el = tmp
+        //     }
+        //     if (i + 1 == len) {
+        //         tmp.innerHTML = txt
+        //         parent.appendChild(tmp)
+        //     }
+        //     if (i > 0 && i < len) {
+        //         parent.appendChild(tmp)
+        //         parent = tmp
+        //     }
+        // })
+
+        // _.query(".wrap").appendChild(el)
+        // _.query(".wrap").appendChild(_.tr("ddd"))
+    </script>
+</body>
+
+</html>

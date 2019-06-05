@@ -193,23 +193,22 @@ _package("_", this, function () {
         },
         //创建DOm 方式
         createEle: function (tag, text, props, events) {
-            var i = tag.indexOf(" ");
-            if (i > 0) {
-                var leftTag = tag.substring(0, i)
-                return _.createEle(leftTag, _.createEle(tag.substring(i + 1), text, props, events))
+
+            var _createEle = function (tag, text) {
+                var ele = document.createElement(tag)
+                return _appendChild(ele, text);
             }
-            var ele = document.createElement(tag);
-            var append = function (text) {
+
+            var _appendChild = function (ele, text) {
                 switch (_.type(text)) {
                     case "string":
                     case "number":
                     case "date":
-                        // ele.innerHTML += text;                        
                         ele.appendChild(document.createTextNode(text));
                         break;
                     case "array":
                         text.forEach(function (t) {
-                            append(t)
+                            _appendChild(ele, t)
                         })
                         break;
                     case "null":
@@ -217,26 +216,109 @@ _package("_", this, function () {
                     case "undefined":
                         break;
                     default:
-                        ele.appendChild(text)
+                        if (text.nodeType == 1) {
+                            ele.appendChild(text)
+                        }
+                        break;
                 }
+                return ele;
             }
-            append(text)
-            // if (tag.toLowerCase() === "input") {
 
-            // }
-            for (var key in props) {
-                if (tag.toLowerCase() === "input" && key === "checked") {
-                    if (props[key]) {
+
+            var _appendProps = function (ele, props) {
+                for (var key in props) {
+                    if (tag.toLowerCase() === "input" && key === "checked") {
+                        if (props[key]) {
+                            ele.setAttribute(key, props[key])
+                        }
+                    } else {
                         ele.setAttribute(key, props[key])
                     }
-                } else {
-                    ele.setAttribute(key, props[key])
                 }
-            }
-            for (var key in events) {
-                _.addEvent(key, ele, events[key]);
+                return ele;
             }
 
+            var _appendEvents = function (ele, events) {
+                for (var key in events) {
+                    _.addEvent(key, ele, events[key]);
+                }
+                return ele;
+            }
+
+
+
+            // var i = tag.indexOf(" ");
+            // if (i > 0) {
+            //     var leftTag = tag.substring(0, i)
+            //     return _.createEle(leftTag, _.createEle(tag.substring(i + 1), text, props, events))
+            // }
+            var tags = tag.trim().split(" ");
+            //自动补齐层级关系
+            // var _autoFixTag = function (tags, child) {
+            //     switch (_.type(child)) {
+            //         case "string":
+            //         case "number":
+            //         case "date":
+
+            //                 var lastTag = tags[tags.length - 1];
+            //                 switch (lastTag) {
+            //                     case "tr":
+            //                         tags[tags.length] = "td"
+            //                         break;
+            //                     case "thead":
+            //                         tags[tags.length] = "tr"
+            //                         tags[tags.length] = "th"
+            //                         break;
+            //                     case "tbody":
+            //                         tags[tags.length] = "tr"
+            //                         tags[tags.length] = "td"
+            //                         break;
+            //                     case "ul":
+            //                         tags[tags.length] = "li"
+            //                         break;
+            //                     case "table":
+            //                         tags[tags.length] = "body"
+            //                         tags[tags.length] = "tr"
+            //                         tags[tags.length] = "td"
+            //                         break;
+            //                     default:
+            //                         break;
+            //                 }
+            //             break;
+
+            //         case "array":
+            //             child.forEach(function(t){
+
+            //             })
+            //             break;
+            //     }
+
+            //     return tags;
+            // }
+            // tags = _autoFixTag(tags, text);
+            var len = tags.length;
+            var ele, parent;
+            if (len == 1) {
+                ele = _createEle(tag, text)
+            } else {
+                tags.forEach(function (t, i) {
+                    // var tmp = document.createElement(t);
+                    var tmp = _createEle(t)
+                    if (i == 0) {  //first child
+                        parent = ele = tmp
+                    }
+                    if (i + 1 == len) {//last child
+                        tmp = _createEle(t, text)
+                        _appendChild(parent, tmp)
+                    }
+                    if (i > 0 && i < len) {
+                        _appendChild(parent, tmp)
+                        parent = tmp
+                    }
+                })
+            }
+            _appendProps(ele, props);
+            _appendEvents(ele, events);
             return ele;
         },
         checkbox: function (options) {
@@ -741,7 +823,7 @@ _package("nav", _, function () {
 });
 
 //数据库
-_package("webssql", _, function () {
+_package("websql", _, function () {
     var Websql = function (options) {
         if (!(this instanceof Websql)) return new Websql(options);
         var options = this.options = _.extend({
@@ -2722,3 +2804,147 @@ _package("canvas", _, function () {
 
     })
 });
+
+_package("base64", _, function () {
+    function Base64() {}
+    return _.createClass(Base64, {
+
+    }, {
+        encode: function (stringToEncode) {
+            var encodeUTF8string = function (str) {
+                return encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                    function toSolidBytes(match, p1) {
+                        return String.fromCharCode('0x' + p1)
+                    })
+            };
+
+            if (typeof window !== 'undefined') {
+                if (typeof window.btoa !== 'undefined') window.btoa(encodeUTF8string(stringToEncode))
+            } else {
+                return new Buffer(stringToEncode).toString('base64')
+            }
+            var b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
+                o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
+                ac = 0,
+                enc = '',
+                tmpArr = [];
+            if (!stringToEncode) {
+                return stringToEncode
+            }
+            stringToEncode = encodeUTF8string(stringToEncode);
+            do {
+                o1 = stringToEncode.charCodeAt(i++);
+                o2 = stringToEncode.charCodeAt(i++);
+                o3 = stringToEncode.charCodeAt(i++);
+                bits = o1 << 16 | o2 << 8 | o3;
+                h1 = bits >> 18 & 0x3f;
+                h2 = bits >> 12 & 0x3f;
+                h3 = bits >> 6 & 0x3f;
+                h4 = bits & 0x3f;
+                tmpArr[ac++] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4)
+            } while (i < stringToEncode.length);
+            enc = tmpArr.join('');
+            var r = stringToEncode.length % 3;
+            return (r ? enc.slice(0, r - 3) : enc) + '==='.slice(r || 3)
+        },
+        decode: function (encodedData) {
+            var decodeUTF8string = function (str) {
+                return decodeURIComponent(str.split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+                }).join(''))
+            };
+
+            if (typeof window !== 'undefined') {
+                if (typeof window.atob !== 'undefined') {
+                    return decodeUTF8string(window.atob(encodedData))
+                }
+            } else {
+                return new Buffer(encodedData, 'base64').toString('utf-8')
+            }
+            var b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
+                o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
+                ac = 0,
+                dec = '',
+                tmpArr = [];
+            if (!encodedData) {
+                return encodedData
+            }
+            encodedData += '';
+            do {
+                // unpack four hexets into three octets using index points in b64
+                h1 = b64.indexOf(encodedData.charAt(i++));
+                h2 = b64.indexOf(encodedData.charAt(i++));
+                h3 = b64.indexOf(encodedData.charAt(i++));
+                h4 = b64.indexOf(encodedData.charAt(i++));
+                bits = h1 << 18 | h2 << 12 | h3 << 6 | h4;
+                o1 = bits >> 16 & 0xff;
+                o2 = bits >> 8 & 0xff;
+                o3 = bits & 0xff;
+                if (h3 === 64) {
+                    tmpArr[ac++] = String.fromCharCode(o1)
+                } else if (h4 === 64) {
+                    tmpArr[ac++] = String.fromCharCode(o1, o2)
+                } else {
+                    tmpArr[ac++] = String.fromCharCode(o1, o2, o3)
+                }
+            } while (i < encodedData.length);
+            dec = tmpArr.join('')
+            return decodeUTF8string(dec.replace(/\0+$/, ''))
+        }
+    })
+});
+
+//邮件编码
+_package("quotedprintable", _, function () {
+    function QuotedPrintable() {}
+    return _.createClass(QuotedPrintable, {}, {
+        decode: function (str) {
+            //.replace(/=(?:\r\n?|\n|$)/g, '')
+            return str.replace(/[\t\x20]$/gm, '').replace(/=(\r?\n|$)/g, '').replace(/=([a-f0-9]{2})/ig, function (m, code) {
+                return String.fromCharCode(parseInt(code, 16))
+            })
+        },
+        encode: function (str) {
+            // var hexadecimal = codePoint.toString(16).toUpperCase();
+            // return '=' + ('0' + hexadecimal).slice(-2);
+        }
+    })
+});
+
+//url 编码  百分号编码
+//使用%百分号加上两位的字符[0~9A~F]代表一个字节的 十六进制形式。Url编码默认使用的字符集是US-ASCII
+// 安全字符不同：
+// escape（69个）：*/@+-._0-9a-zA-Z
+// encodeURI（82个）：!#$&'()*+,/:;=?@-._~0-9a-zA-Z
+// encodeURIComponent（71个）：!'()*-._~0-9a-zA-Z
+_package("url", _, function () {
+    function URL() {}
+    return _.createClass(URL, {}, {
+        decode: function (str) {
+            return decodeURIComponent(str);
+        },
+        encode: function (str) {
+            return encodeURIComponent(str);
+        }
+    })
+});
+
+//unicode 统一码 0 - 65535 之间的整数
+_package("unicode", _, function () {
+    function Unicode() {}
+    return _.createClass(URL, {}, {
+        decode: function (str) {
+            return str.split("%").map(function (t) {
+                return String.fromCharCode("0x" + t)
+            })
+        },
+        encode: function (str) {
+            var hex = ""
+            for (var i = 0; i < str.length; i++) {
+                // hex += "%" + ("00"+str.charCodeAt(i).toString(16).toUpperCase()).slice(-2)
+                hex += '%' + ('00' + str.charCodeAt(i).toString(16).toUpperCase()).slice(-4)
+            }
+            return hex;
+        }
+    })
+})
