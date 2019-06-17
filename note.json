@@ -1,0 +1,48 @@
+{
+    id: "year-buinessid-index",
+    tools: [
+        {
+            label: "replay",
+            icon: "replay",
+            callback: "function(){}"
+        }
+    ],
+	attachment: [
+        {
+            name: "xx",
+	url: "xx.doc"
+        },
+        {
+            name: "xx2",
+	url: "xx.doc"
+        }
+    ],
+    images: [
+        {
+            name: "",
+            url: ""
+        }
+    ],
+
+	notify: [
+        {
+	to: "someone@email.com",
+	status: "read"
+        },
+        {
+            to: "someone@email.com",
+            status: "unread"
+        }
+    ],
+	content: {
+    mode: "rw",
+    allowreply: true,
+	html: "test"
+    },
+
+    history: [
+        {
+            id: ""
+        }
+    ]
+}

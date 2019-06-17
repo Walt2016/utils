@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="test"></div>
+    <script src="utils.js"></script>
+    <script>
+        var tag = ".table"
+
+        // tag.replace(/\.(\w+)/, function (a, m) {
+
+        //     // var ele = document.createElement(m);
+        //     // ele.innerHTML = "teset"
+        //     var ele = _.div("test", {
+        //         class: m
+        //     })
+        //     _.query(".test").appendChild(ele)
+        // })
+
+        _.ele = function (tag, text) {
+            var ele;
+            var _tag = _tag || "div";
+            tag.replace(/(\w*?)([\.|#])(\w+)/, function (a, _tag, typ, m) {
+                _tag = _tag || "div";
+                var prop={};
+
+                switch (typ) {
+                    case ".":
+                    prop["class"]=m
+                        ele = _.createEle(_tag, text, {
+                            class: m
+                        })
+                        break;
+                    case "#":
+                    prop["id"]=m
+                        ele = _.createEle(_tag, text, {
+                            id: m
+                        })
+                        break;
+                }
+            })
+            return ele
+        }
+
+        _.query(".test").appendChild(_.ele("font#test", "fffffd"))
+
+        _.query(".test").appendChild(_.ele(".tesffft", "2222"))
+        // _.query(".test").appendChild(_.ele("abc", "2222"))
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <div class="test"></div>
+    <div class="wrap"></div>
+
+    <div class="template">
+        <ul>
+            <li>fff</li>
+        </ul>
+        {{a}}
+        {{b}}
+    </div>
+
+    <div class="table"></div>
+
+    <script src="utils.js"></script>
+    <script>
+        //  var d=   _.div("trst",{
+        //         class:"btn"
+        //     },{
+        //         click:function(e){
+        //             var target=e.target;
+        //             console.log(target)
+        //         }
+        //     })
+
+        //     _.query(".test").appendChild(d)
+        // var ul={
+        //     tag:ul,
+        //     child:{
+
+        //     }
+
+        // }
+
+        //   ' ul>li>[i,span{"test"}]' 
+
+
+
+        // _.ele("ul li[i.icon span]")
+        var wrap = _.query(".wrap")
+        var ul = _.ul(_.li([_.i("", {
+            class: "iocn"
+        }), _.span("test")]))
+        wrap.appendChild(ul)
+
+        // _.template({
+        //     el:".template",
+        //     data:{
+        //         a:"1",
+        //         b:33,
+
+        //     }
+        // })
+
+        //dimension
+        // var tp_dim = [{
+        //         prop: "dim_id",
+        //         label: "维度编码",
+        //         type: "string",
+        //         pk: true
+        //     },
+        //     {
+        //         prop: "dim_name",
+        //         label: "维度名称",
+        //         type: "string"
+        //     },
+        //     {
+        //         prop: "dim_level",
+        //         label: "维度优先级",
+        //         type: "string"
+        //     },
+        //     {
+        //         prop: "dim_type",
+        //         label: "维度类型",
+        //         type: "string"
+        //     }
+        // ]
+
+        ////tname, rs, options, outputType
+        _package("grid", _, function () {
+            function Grid(options) {
+                if (!(this instanceof Grid)) return new Grid(options);
+                this.config = _.extend(this.getGridConfig(), options)
+                this.tname = options.tname || ""
+                this.tbl = options.tbl || []
+                this.rs = options.rs || []
+                this.count = this.length;
+                this.outputType = options.outputType
+                if (!this.outputType && this.config.fixedhead) {
+                    this.outputType = "fixedhead"
+                }
+                this.typs = [];
+                this.fmts = [];
+                this.offset = 0;
+                if (this.config.check) this.offset++;
+                if (this.config.seq) this.offset++;
+                return this._output()
+            }
+            return _.createClass(Grid, {
+                getGridConfig: function () {
+                    var gridConfig = [{
+                            label: "显示字段别名",
+                            checked: true,
+                            name: "label"
+                        }, {
+                            label: "显示序号列",
+                            checked: true,
+                            name: "seq"
+                        },
+                        {
+                            label: "显示选择列",
+                            checked: true,
+                            name: "check"
+                        },
+                        {
+                            label: "合计数字列",
+                            checked: true,
+                            name: "statistic"
+                        },
+                        {
+                            label: "固定表头",
+                            checked: false,
+                            name: "fixedhead"
+                        },
+                        {
+                            label: "显示tfoot",
+                            checked: true,
+                            name: "showTFoot"
+                        }
+                        // {
+                        //     label: "允许多表查询",
+                        //     checked: true,
+                        //     name: "showMultisql"
+                        // }
+                    ];
+                    var config = {}
+                    gridConfig.forEach(function (t) {
+                        var ipt = _.query("input[name='" + t.name + "']")
+                        var key = t.name; //.toLowerCase();
+                        config[key] = ipt ? ipt.checked : t.checked;
+                    })
+                    return config
+                },
+                _output: function () {
+                    var colgroup = this._colGroup();
+                    var thead = this._thead();
+                    var tbody = this._tbody();
+                    var tfoot = this.tfoot;
+                    var tname = this.tname;
+                    var optPanel = this._optPanel();
+                    switch (this.outputType) {
+                        case "colgroup":
+                            _.colgroup(colgroup);
+                            break;
+                        case "thead":
+                            return _.thead(thead);
+                            break;
+                        case "tbody":
+                            return _.tbody(tbody);
+                            break;
+                        case "tfoot":
+                            return _.tfoot(tfoot);
+                            break;
+                        case "fixedhead":
+                            var cols = _.colgroup(colgroup)
+                            return _.div([
+                                _.div(_.table([cols, _.thead(thead)], {
+                                    // class: "dataintable",
+                                    tablename: tname
+                                }), {
+                                    class: "table-fixed-head"
+                                }),
+                                _.div(_.table([cols.cloneNode(true), _.tbody(tbody), _
+                                    .tfoot(tfoot)
+                                ], {
+                                    // class: "dataintable",
+                                    tablename: tname
+                                }), {
+                                    class: "table-fixed-body"
+                                })
+
+                            ], {
+                                class: "dataintable",
+                                tablename: tname
+                            })
+                            break;
+                        default:
+                            return _.div([_.table([_.colgroup(colgroup), _.thead(thead), _.tbody(
+                                tbody), _.tfoot(
+                                tfoot)], {
+                                tablename: tname
+                            }), optPanel], {
+                                class: "dataintable",
+                                tablename: tname
+                            });
+                    }
+                },
+                _colGroup: function () {
+                    //定义列宽
+                    var tbl = this.tbl;
+                    var offset = this.offset
+                    var config = this.config
+                    var defWidth = (100 - 5 * offset) / tbl.length + "%"
+                    var colgroup = tbl.map(function (t) {
+                        return _.col("", {
+                            style: "width: " + (t.width ? t.width : defWidth) + ";"
+                        })
+                    })
+                    if (config.seq) colgroup.unshift(_.col("", {
+                        style: "width: 5%;"
+                    }));
+                    if (config.check) colgroup.unshift(_.col("", {
+                        style: "width: 5%;"
+                    }));
+                    return colgroup
+                },
+                _row: function (r, i) {
+                    var _this = this;
+                    var config = this.config;
+                    var tfoot = this.tfoot;
+                    var arr = _.obj2arr(r),
+                        vals = arr.vals;
+
+                    var fmts = this.fmts;
+                    var typs = this.typs;
+                    var offset = this.offset;
+                    var count = this.count
+                    var cell = vals.map(function (t, j) {
+                        //计算
+                        switch (typs[j]) {
+                            case "number":
+                                var colIndex = j + offset;
+                                //数据行累加计算
+                                if (i > 0 && t) {
+                                    tfoot[colIndex] += parseFloat(t);
+                                }
+                                //最后一行，处理小数
+                                if (i === count) {
+                                    //保留1位并去掉多余0
+                                    _this.tfoot[colIndex] = parseFloat(_this.tfoot[colIndex]
+                                        .toFixed(1))
+                                }
+                                break;
+                            case "date":
+                                t = [_.createEle("i", "", {
+                                    class: "date"
+                                }), fmts[j] ? _time(t).format(fmts[j]) : t]
+
+                                break;
+                        }
+                        return _.td(t, {
+                            class: typs[j]
+                        });
+                    });
+                    if (config.seq) cell.unshift(_.td(i === 0 ? "#" : i));
+                    if (config.check) cell.unshift(_.td(_.checkbox()));
+
+
+                    return _.tr(cell, {
+                        rowid: i
+                    })
+                },
+                _thead: function () {
+                    var _this = this;
+                    var tbl = this.tbl;
+                    var config = this.config;
+                    var orderby = config.orderby || "";
+                    var typs = this.typs;
+                    var fmts = this.fmts;
+                    var thead =
+                        tbl.map(function (t) {
+                            var typ = t.type ? t.type : "string";
+                            var fmt = t.format ? t.format : "";
+                            var lable = t.label ? t.label : t;
+                            var prop = t.prop ? t.prop : t;
+                            var seq = "";
+                            var hide = !!t.hide;
+                            if (!config.label) lable = prop;
+                            //排序
+                            if (prop === orderby.split(" ")[0]) {
+                                seq = orderby.split(" ")[1] || "asc"
+                            }
+                            if (!hide) {
+                                if (typ === "number" && config.statistic && _.type(config
+                                        .showTFoot) === "undefined") config.showTFoot = true;
+                                typs.push(typ);
+                                fmts.push(fmt);
+                            }
+                            return hide ? "" : _.th([_.div(lable, {
+                                class: "text"
+                            }), _.div("", {
+                                class: "icon"
+                            })], {
+                                class: typ,
+                                prop: prop,
+                                seq: seq
+                            }, {
+                                click: function (e) {
+                                    var el = e.target
+                                    var th = _.closest(el, "th")
+                                    var prop=th.getAttribute("prop");
+                                    var seq = th.getAttribute("seq")
+                                    var ths = _.queryAll("th[seq]")
+                                    ths.forEach(function (t) {
+                                        if(t.getAttribute("prop")!=="prop")
+                                        t.setAttribute("seq", "")
+                                    })
+
+                                    var asc=seq === "asc" ? "desc" :
+                                        "asc"
+                                    th.setAttribute("seq", asc)
+
+
+                                    // this.rs=r
+                                    _this.rs=_this.rs.sort(_.sortBy(prop,asc,"number"))
+
+                                    console.log(_this.rs)
+
+
+
+                                }
+                            });
+                        });
+
+                    if (config.seq) thead.unshift(_.th("#"));
+                    if (config.check) thead.unshift(_.th(_.checkbox()));
+                    return thead;
+                },
+                _tbody: function () {
+                    var _this = this;
+                    var rs = this.rs;
+                    var config = this.config;
+                    var count = this.count;
+                    var offset = this.offset;
+                    var typs = this.typs;
+                    var tbl = this.tbl;
+                    this.tfoot = new Array(offset).fill("").concat(typs).map(function (t, i) {
+                        return i === 0 ? "合计" : t === "number" ? 0 : "";
+                    });
+                    var tbody =
+                        count === 0 ? _.createEle("tr td", "未查到记录", {
+                            colspan: tbl.length + offset
+                        }) :
+                        rs.map(function (r, i) {
+                            return _this._row(r, i + 1)
+                        });
+
+                    this.tfoot = config.showTFoot ? this.tfoot.map(function (t) {
+                        return _.td(t, {
+                            class: t === "" ? "string" : "number"
+                        });
+                    }) : "";
+                    return tbody
+                },
+                _optPanel: function () {
+                    var optPanel = _.div([_.btn("删除", {}, {
+                        click: function (e) {
+                            var el = e.target,
+                                table = _.closest(el, ".dataintable");
+                            var cbs = _.queryAll(
+                                "tbody input[type='checkbox']:checked",
+                                table);
+                            var tablename = table.getAttribute("tablename")
+                            // var sql=""
+                            cbs.forEach(function (t) {
+                                //  sql=`delete from ${tablename} where id=`
+                                var tr = _.closest(t, "tr")
+                                var rowid = tr.getAttribute("rowid")
+                                _this.sqls.push({
+                                    tbl: tbl,
+                                    sql: `delete from ${tablename} where rowid=${rowid}`
+                                })
+                            })
+                            _this.setSqlcmd.call(_this)
+
+                        }
+                    }), _.btn("取消", {}, {
+                        click: function (e) {
+                            var el = e.target,
+                                table = _.closest(el, ".dataintable");
+                            var cbs = _.queryAll(
+                                "input[type='checkbox']:checked", table);
+                            cbs.forEach(function (t) {
+                                t.checked = false;
+                            })
+                            optPanel.style.overflow = "hidden"
+
+                        }
+                    })], {
+                        class: "optPanel"
+                    })
+                    return optPanel
+                }
+            })
+        })
+
+
+        // var g = _.grid({
+        //     tbl: [{
+        //             prop: "dim_id",
+        //             label: "维度编码",
+        //             type: "string",
+        //             pk: true
+        //         },
+        //         {
+        //             prop: "dim_name",
+        //             label: "维度名称",
+        //             type: "string"
+        //         },
+        //         {
+        //             prop: "dim_level",
+        //             label: "维度优先级",
+        //             type: "string"
+        //         },
+        //         {
+        //             prop: "dim_type",
+        //             label: "维度类型",
+        //             type: "string"
+        //         }
+        //     ],
+        //     // rs: [1, 2, 3, 4]
+        //     rs: [{
+        //             dim_id: 1,
+        //             dim_name: "22",
+        //             dim_level: "22",
+        //             dim_type: "222"
+        //         },
+        //         {
+        //             dim_id: 1,
+        //             dim_name: "哈哈哈",
+        //             dim_level: "22",
+        //             dim_type: "222"
+        //         }
+        //     ]
+        // })
+
+        var g = _.grid({
+            tname: "成绩单",
+            tbl: [{
+                    prop: "id",
+                    label: "学号",
+                    type: "string",
+                    pk: true
+                },
+                {
+                    prop: "name",
+                    label: "姓名",
+                    type: "string"
+                },
+
+                {
+                    prop: "score",
+                    label: "成绩",
+                    type: "number"
+                }
+            ],
+            rs: [{
+                    id: 1,
+                    name: "小王",
+                    score: 100
+                },
+                {
+                    id: 1,
+                    name: "小李",
+                    score: 80
+                },
+                {
+                    id: 1,
+                    name: "小刘",
+                    score: 38
+                },
+                {
+                    id: 1,
+                    name: "小孙",
+                    score: 99
+                }
+            ],
+            // showTFoot:false
+            // rs: [1, 2, 3, 4]
+            // rs: [{
+            //         dim_id: 1,
+            //         dim_name: "22",
+            //         dim_level: "22",
+            //         dim_type: "222"
+            //     },
+            //     {
+            //         dim_id: 1,
+            //         dim_name: "哈哈哈",
+            //         dim_level: "22",
+            //         dim_type: "222"
+            //     }
+            // ]
+        })
+
+        // console.log(g)
+        _.query(".table").appendChild(g)
+    </script>
+</body>
+
+</html>

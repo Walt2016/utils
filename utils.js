@@ -102,9 +102,12 @@ _package("_", this, function () {
                 return _.closest(el.parentNode, cls)
             }
         },
-        sortBy: function (key, asc) {
+        sortBy: function (key, asc,type) {
             return function (a, b) {
-                if (key === "count") {
+
+                // if (key === "count") {
+                    if (type === "number") {
+
                     return asc ? a[key] - b[key] : b[key] - a[key]
                 } else {
                     return asc ? a[key].localeCompare(b[key], 'zh-CN') : b[key].localeCompare(a[key], 'zh-CN')
@@ -1624,7 +1627,6 @@ _package("websql", _, function () {
                         tablename: tname
                     });
             }
-
         },
         //字符串拼接方式 生成表格
         grid: function (tname, rs, options) {

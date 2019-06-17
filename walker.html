@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="utils.js"></script>
+    <script>
+        _package("walker", _, function () {
+            function Walker(str) {
+                if (!(this instanceof Walker)) return new Walker(str);
+                this.pos = this.start = 0;
+                this.str = str
+                //     .replace(/\r\n/g, '\n')
+                //     .replace(/\r/g, '\n');
+
+                // this.lines = this.str
+                //     .split('\n');
+                // this.total_lines = this.lines.length;
+            }
+
+            return _.createClass(Walker, {
+                eol: function () {
+                    return this.pos >= this.str.length;
+                },
+                sol: function () {
+                    return this.pos == 0;
+                },
+                peek: function () {
+                    return this.str.charAt(this.pos);
+                },
+                next: function () {
+                    if (this.pos < this.str.length)
+                        return this.str.charAt(this.pos++);
+                },
+                eat: function (match) {
+                    var ch = this.str.charAt(this.pos),
+                        ok;
+                    if (typeof match == "string")
+                        ok = ch == match;
+                    else
+                        ok = ch && (match.test ? match.test(ch) : match(ch));
+                    if (ok) {
+                        ++this.pos;
+                        return ch;
+                    }
+                },
+                eatWhile: function (match) {
+                    var start = this.pos;
+                    while (this.eat(match)) {}
+                    return this.pos > start;
+                },
+                eatSpace: function () {
+                    var start = this.pos;
+                    while (/[\s\u00a0]/.test(this.str.charAt(this.pos)))
+                        ++this.pos;
+                    return this.pos > start;
+                },
+                skipToEnd: function () {
+                    this.pos = this.str.length;
+                },
+                skipTo: function (ch) {
+                    var found = this.str.indexOf(ch, this.pos);
+                    if (found > -1) {
+                        this.pos = found;
+                        return true;
+                    }
+                },
+                skipToPair: function (open, close) {
+                    var braceCount = 0,
+                        ch;
+                    var pos = this.pos,
+                        len = this.str.length;
+                    while (pos < len) {
+                        ch = this.str.charAt(pos++);
+                        if (ch == open) {
+                            braceCount++;
+                        } else if (ch == close) {
+                            braceCount--;
+                            if (braceCount < 1) {
+                                this.pos = pos;
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                },
+                backUp: function (n) {
+                    this.pos -= n;
+                },
+                match: function (pattern, consume, caseInsensitive) {
+                    if (typeof pattern == "string") {
+                        var cased = caseInsensitive ?
+                            function (str) {
+                                return str.toLowerCase();
+                            } :
+                            function (str) {
+                                return str;
+                            };
+
+                        if (cased(this.str).indexOf(cased(pattern), this.pos) == this.pos) {
+                            if (consume !== false)
+                                this.pos += pattern.length;
+                            return true;
+                        }
+                    } else {
+                        var match = this.str.slice(this.pos).match(pattern);
+                        if (match && consume !== false)
+                            this.pos += match[0].length;
+                        return match;
+                    }
+                },
+                current: function () {
+                    return this.str.slice(this.start, this.pos);
+                }
+            })
+
+        })
+
+
+        var reValidName = /^[\w\-\$\:@\!%]+\+?$/i;
+        var reWord = /[\w\-:\$@]/;
+
+        function parseAbbreviation(abbr) {
+            abbr = require('utils').trim(abbr);
+
+            var root = new AbbreviationNode;
+            var context = root.addChild(),
+                ch;
+
+            /** @type Walker */
+            var stream = require('Walker').create(abbr);
+            var loopProtector = 1000,
+                multiplier;
+
+            while (!stream.eol() && --loopProtector > 0) {
+                ch = stream.peek();
+
+                switch (ch) {
+                    case '(': // abbreviation group
+                        stream.start = stream.pos;
+                        if (stream.skipToPair('(', ')')) {
+                            var inner = parseAbbreviation(stripped(stream.current()));
+                            if (multiplier = stream.match(/^\*(\d+)?/, true)) {
+                                context._setRepeat(multiplier[1]);
+                            }
+
+                            _.each(inner.children, function (child) {
+                                context.addChild(child);
+                            });
+                        } else {
+                            throw 'Invalid abbreviation: mo matching ")" found for character at ' + stream.pos;
+                        }
+                        break;
+
+                    case '>': // child operator
+                        context = context.addChild();
+                        stream.next();
+                        break;
+
+                    case '+': // sibling operator
+                        context = context.parent.addChild();
+                        stream.next();
+                        break;
+
+                    case '^': // climb up operator
+                        var parent = context.parent || context;
+                        context = (parent.parent || parent).addChild();
+                        stream.next();
+                        break;
+
+                    default: // consume abbreviation
+                        stream.start = stream.pos;
+                        stream.eatWhile(function (c) {
+                            if (c == '[' || c == '{') {
+                                if (stream.skipToPair(c, pairs[c])) {
+                                    stream.backUp(1);
+                                    return true;
+                                }
+
+                                throw 'Invalid abbreviation: mo matching "' + pairs[c] +
+                                    '" found for character at ' + stream.pos;
+                            }
+
+                            if (c == '+') {
+                                // let's see if this is an expando marker
+                                stream.next();
+                                var isMarker = stream.eol() || ~'+>^*'.indexOf(stream.peek());
+                                stream.backUp(1);
+                                return isMarker;
+                            }
+
+                            return c != '(' && isAllowedChar(c);
+                        });
+
+                        context.setAbbreviation(stream.current());
+                        stream.start = stream.pos;
+                }
+            }
+
+            if (loopProtector < 1)
+                throw 'Endless loop detected';
+
+            return root;
+        }
+
+        function consumeQuotedValue(stream, quote) {
+            var ch;
+            while (ch = stream.next()) {
+                if (ch === quote)
+                    return true;
+
+                if (ch == '\\')
+                    continue;
+            }
+
+            return false;
+        }
+
+        function extractAttributes(attrSet, attrs) {
+            // attrSet = require('utils').trim(attrSet);
+            var result = [];
+
+            /** @type Walker */
+            // var stream = require('Walker').create(attrSet);
+
+            var stream = _.Walker(attrSet)
+            stream.eatSpace();
+
+            while (!stream.eol()) {
+                stream.start = stream.pos;
+                if (stream.eatWhile(reWord)) {
+                    var attrName = stream.current();
+                    var attrValue = '';
+                    if (stream.peek() == '=') {
+                        stream.next();
+                        stream.start = stream.pos;
+                        var quote = stream.peek();
+
+                        if (quote == '"' || quote == "'") {
+                            stream.next();
+                            if (consumeQuotedValue(stream, quote)) {
+                                attrValue = stream.current();
+                                // strip quotes
+                                attrValue = attrValue.substring(1, attrValue.length - 1);
+                            } else {
+                                throw 'Invalid attribute value';
+                            }
+                        } else if (stream.eatWhile(/[^\s\]]/)) {
+                            attrValue = stream.current();
+                        } else {
+                            throw 'Invalid attribute value';
+                        }
+                    }
+
+                    result.push({
+                        name: attrName,
+                        value: attrValue
+                    });
+                    stream.eatSpace();
+                } else {
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+
+        console.log(extractAttributes("addd='fff ' ddd='fffg'"))
+
+        walker = {
+            lines: null,
+            total_lines: 0,
+            linenum: -1,
+            line: '',
+            ch: '',
+            chnum: -1,
+            init: function (source) {
+                var me = walker;
+
+                // source, yumm
+                me.lines = source
+                    .replace(/\r\n/g, '\n')
+                    .replace(/\r/g, '\n')
+                    .split('\n');
+                me.total_lines = me.lines.length;
+
+                // reset
+                me.chnum = -1;
+                me.linenum = -1;
+                me.ch = '';
+                me.line = '';
+
+                // advance
+                me.nextLine();
+                me.nextChar();
+            },
+            nextLine: function () {
+                var me = this;
+                me.linenum += 1;
+                if (me.total_lines <= me.linenum) {
+                    me.line = false;
+                } else {
+                    me.line = me.lines[me.linenum];
+                }
+                if (me.chnum !== -1) {
+                    me.chnum = 0;
+                }
+                return me.line;
+            },
+            nextChar: function () {
+                var me = this;
+                me.chnum += 1;
+                while (me.line.charAt(me.chnum) === '') {
+                    if (this.nextLine() === false) {
+                        me.ch = false;
+                        return false; // end of source
+                    }
+                    me.chnum = -1;
+                    me.ch = '\n';
+                    return '\n';
+                }
+                me.ch = me.line.charAt(me.chnum);
+                return me.ch;
+            },
+            peek: function () {
+                return this.line.charAt(this.chnum + 1);
+            }
+        };
+    </script>
+</body>
+
+</html>
