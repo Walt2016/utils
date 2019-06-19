@@ -629,8 +629,10 @@ table thead th[seq='asc'] .icon::before {
     border: 1px solid #aaa;
 }
 .dataintable table td[active] {
-    /* outline: 1px solid #000; */
     background: #76c9eb
+}
+.dataintable table td[update] {
+    padding: 0;
 }
 .dataintable table td.date,.dataintable table th{
     white-space: nowrap;
@@ -639,6 +641,14 @@ table thead th[seq='asc'] .icon::before {
 .dataintable table td.hidden
 {
     display: none;
+}
+
+/* .dataintable table td{
+padding:0;
+} */
+.dataintable table td input[type="text"]{
+    width: 100%;
+    height: 30px;
 }
 
 

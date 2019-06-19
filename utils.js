@@ -383,6 +383,14 @@ _package("_", this, function () {
                 src: options
             })
         },
+        input: function (text, props) {
+            return _.createEle("input", "",
+                _.extend({
+                    value: text,
+                    type: "text",
+                }, props)
+            )
+        },
         //遍历dom，操作
         traversalWidth: function (el) {
             var children = el.children,
@@ -881,6 +889,7 @@ _package("grid", _, function () {
         },
         _output: function () {
             var _this = this;
+            this.shortcut();
             var colgroup = this._colGroup();
             var thead = this._thead();
             var tbody = this._tbody();
@@ -1139,10 +1148,7 @@ _package("grid", _, function () {
                         })
                     })
                     _this.events.del && _this.events.del(sqls);
-
                     // _this.emit("setSqlcmd",sqls)
-                    // _this.setSqlcmd.call(_this)
-
                 }
             }), _.btn("取消", {}, {
                 click: function (e) {
@@ -1202,6 +1208,89 @@ _package("grid", _, function () {
             var table = _.query("table[active]")
             table && table.removeAttribute("active")
             this.grid.setAttribute("active", "");
+        },
+        //快捷键
+        shortcut: function () {
+            document.onkeydown = function (event) {
+                var grid = _.query(".dataintable[active]")
+                var keyCode = 0,
+                    e = e || event;
+                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+                switch (keyCode) {
+                    case 13: // enter 键
+                        var cell = _.query("td[active]", grid)
+                        var input = _.query("input", cell)
+                        cell.innerText = input.value;
+                        cell.removeAttribute("update")
+                        break;
+                    case 27: // 按 Esc 
+
+                        break;
+                    case 37: //左箭头
+                        var cell = _.query("td[active]", grid)
+                        if(!cell) return;
+                        if (cell.hasAttribute("update")) {
+                            return
+                        }
+                        var val = cell.innerText
+                        var prop = cell.getAttribute("prop")
+                        console.log(val)
+                        var input = _.input(val, {
+                            name: prop
+                        })
+                        cell.innerText = "";
+                        cell.appendChild(input)
+                        cell.setAttribute("update", "")
+                        setTimeout(function () {
+                            input.focus();
+                            input.value = '';
+                            input.value = val;
+                        }, 0)
+                        break;
+                    case 38: //上箭头
+                        var tr = _.query("tr[active]", grid)
+                        if (!tr) return;
+                        var rowid = tr.getAttribute("rowid");
+
+                        var cell = _.query("td[active]", grid)
+                        var prop = cell.getAttribute("prop")
+
+                        // var newRow=_.query
+                        tr.removeAttribute("active")
+                        cell.removeAttribute("active")
+                        // var newRow = tr.pre.nextSibling;
+
+                        var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
+                        if (newRow) {
+                            newRow.setAttribute("active", "")
+                            var newCell = _.query("td[prop='" + prop + "']", newRow)
+                            newCell.setAttribute("active", "")
+
+                        }
+
+                        break;
+                    case 40: //下箭头
+                        var tr = _.query("tr[active]", grid)
+                        if (!tr) return;
+                        var rowid = tr.getAttribute("rowid");
+
+                        var cell = _.query("td[active]", grid)
+                        var prop = cell.getAttribute("prop")
+
+                        // var newRow=_.query
+                        tr.removeAttribute("active")
+                        cell.removeAttribute("active")
+                        var newRow = tr.nextSibling;
+                        if (newRow) {
+                            newRow.setAttribute("active", "")
+                            var newCell = _.query("td[prop='" + prop + "']", newRow)
+                            newCell.setAttribute("active", "")
+                        }
+
+                        break;
+                }
+                console.log(e.keyCode)
+            };
         }
     })
 });
@@ -2569,7 +2658,6 @@ _package("color", _, function () {
 
 //画图
 _package("canvas", _, function () {
-
     var MyCanvas = function (options) {
         if (!(this instanceof MyCanvas)) return new MyCanvas(options);
         var canvas = _.createEle("canvas");
