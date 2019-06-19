@@ -620,10 +620,16 @@ table thead th[seq='asc'] .icon::before {
     color: #fff;
 }
 
+
+
 .dataintable table td {
     vertical-align: text-top;
     padding: 6px 15px 6px 6px;
     border: 1px solid #aaa;
+}
+.dataintable table td[active] {
+    /* outline: 1px solid #000; */
+    background: #76c9eb
 }
 .dataintable table td.date,.dataintable table th{
     white-space: nowrap;
@@ -637,6 +643,14 @@ table thead th[seq='asc'] .icon::before {
     background-color: #fff;
 }
 
+.dataintable table tr:hover {
+    background-color: #c0e1ee
+}
+
+.dataintable table tr[active]
+{
+    background-color: #c0e1ee
+}
 .dataintable table pre {
     width: auto;
     margin: 0;
