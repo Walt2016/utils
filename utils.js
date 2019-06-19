@@ -820,6 +820,7 @@ _package("grid", _, function () {
         this.tname = options.tname || ""
         this.tbl = options.tbl || []
         this.rs = options.rs || []
+        this.events = options.events || {};
         this.count = this.length;
         this.outputType = options.outputType
         if (!this.outputType && this.config.fixedhead) {
@@ -827,6 +828,7 @@ _package("grid", _, function () {
         }
         this.typs = [];
         this.fmts = [];
+        this.props = [];
         this.offset = 0;
         if (this.config.check) this.offset++;
         if (this.config.seq) this.offset++;
@@ -878,61 +880,54 @@ _package("grid", _, function () {
             return config
         },
         _output: function () {
-            var _this=this;
+            var _this = this;
             var colgroup = this._colGroup();
             var thead = this._thead();
-            var tbody = _.tbody(this._tbody(),{},{
-                click:function(e){
-                    _this.activeCell(e.target);
-                    _this.activeRow(e.target);
-                }
-            }) ;
+            var tbody = this._tbody();
             var tfoot = this.tfoot;
             var tname = this.tname;
             var optPanel = this._optPanel();
             switch (this.outputType) {
                 case "colgroup":
-                    _.colgroup(colgroup);
+                    return colgroup;
                     break;
                 case "thead":
-                    return _.thead(thead);
+                    return thead;
                     break;
                 case "tbody":
                     return tbody;
                     break;
                 case "tfoot":
-                    return _.tfoot(tfoot);
+                    return tfoot;
                     break;
                 case "fixedhead":
-                    var cols = _.colgroup(colgroup)
+                    var cols = colgroup
                     return _.div([
-                        _.div(_.table([cols, _.thead(thead)], {
-                            // class: "dataintable",
+                        _.div(_.table([cols, thead], {
                             tablename: tname
                         }), {
                             class: "table-fixed-head"
                         }),
-                        _.div(_.table([cols.cloneNode(true), tbody, _
-                            .tfoot(tfoot)
-                        ], {
-                            // class: "dataintable",
+                        _.div(_.table([cols.cloneNode(true), tbody, tfoot], {
                             tablename: tname
                         }), {
                             class: "table-fixed-body"
                         })
-
                     ], {
                         class: "dataintable",
                         tablename: tname
                     })
                     break;
                 default:
-                    return _.div([_.table([_.colgroup(colgroup), _.thead(thead), tbody, _.tfoot(
-                        tfoot)], {
+                    return _.div([_.table([colgroup, thead, tbody, tfoot], {
                         tablename: tname
                     }), optPanel], {
                         class: "dataintable",
                         tablename: tname
+                    }, {
+                        click: function (e) {
+                            _this.activeGrid(e.target)
+                        }
                     });
             }
         },
@@ -953,27 +948,40 @@ _package("grid", _, function () {
             if (config.check) colgroup.unshift(_.col("", {
                 style: "width: 5%;"
             }));
-            return colgroup
+            // return colgroup
+            return _.colgroup(colgroup)
         },
         _row: function (r, i) {
             var _this = this;
             var config = this.config;
             var tfoot = this.tfoot;
-            var arr = _.obj2arr(r),
-                vals = arr.vals;
+            // var arr = _.obj2arr(r),
+            //     vals = arr.vals;
+            // var props = arr.keys;
+            var props = this.props;
+            // var vals=[]
+            // props.forEach(function(t){
+            //     vals.push(r[t])
+            // })
 
             var fmts = this.fmts;
             var typs = this.typs;
             var offset = this.offset;
             var count = this.count
-            var cell = vals.map(function (t, j) {
+            // var cell = vals.
+            var cell = typs.map(function (t, j) {
+                var typ = t; //typs[j]
+                // var val = vals[j]
+                var fmt = fmts[j]
+                var prop = props[j]
+                var val = r[prop]
                 //计算
-                switch (typs[j]) {
+                switch (typ) {
                     case "number":
                         var colIndex = j + offset;
                         //数据行累加计算
-                        if (i > 0 && t) {
-                            tfoot[colIndex] += parseFloat(t);
+                        if (i > 0 && val) {
+                            tfoot[colIndex] += parseFloat(val);
                         }
                         //最后一行，处理小数
                         if (i === count) {
@@ -985,18 +993,17 @@ _package("grid", _, function () {
                     case "date":
                         t = [_.createEle("i", "", {
                             class: "date"
-                        }), fmts[j] ? _time(t).format(fmts[j]) : t]
+                        }), fmt ? _time(val).format(fmt) : val]
 
                         break;
                 }
-                return _.td(t, {
-                    class: typs[j]
+                return _.td(val, {
+                    class: typ,
+                    prop: prop
                 });
             });
             if (config.seq) cell.unshift(_.td(i === 0 ? "#" : i));
             if (config.check) cell.unshift(_.td(_.checkbox()));
-
-
             return _.tr(cell, {
                 rowid: i
             })
@@ -1008,6 +1015,7 @@ _package("grid", _, function () {
             var orderby = config.orderby || "";
             var typs = this.typs;
             var fmts = this.fmts;
+            var props = this.props;
             var thead =
                 tbl.map(function (t) {
                     var typ = t.type ? t.type : "string";
@@ -1026,6 +1034,7 @@ _package("grid", _, function () {
                                 .showTFoot) === "undefined") config.showTFoot = true;
                         typs.push(typ);
                         fmts.push(fmt);
+                        props.push(prop)
                     }
                     return hide ? "" : _.th([_.div(lable, {
                         class: "text"
@@ -1045,12 +1054,16 @@ _package("grid", _, function () {
             if (config.seq) thead.unshift(_.th("#"));
             if (config.check) thead.unshift(_.th(_.checkbox(), {
                 class: "selectAll"
-            },{
-                click:function(e){
+            }, {
+                click: function (e) {
                     _this.selectAll(e.target)
                 }
             }));
-            return thead;
+            return _.thead(thead, {}, {
+                click: function (e) {
+                    _this.avtiveCol(e.target)
+                }
+            });
         },
         _tbody: function () {
             var _this = this;
@@ -1060,6 +1073,7 @@ _package("grid", _, function () {
             var offset = this.offset;
             var typs = this.typs;
             var tbl = this.tbl;
+            var props = this.props;
             this.tfoot = new Array(offset).fill("").concat(typs).map(function (t, i) {
                 return i === 0 ? "合计" : t === "number" ? 0 : "";
             });
@@ -1071,12 +1085,19 @@ _package("grid", _, function () {
                     return _this._row(r, i + 1)
                 });
 
-            this.tfoot = config.showTFoot ? this.tfoot.map(function (t) {
+            this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
                 return _.td(t, {
-                    class: t === "" ? "string" : "number"
+                    class: t === "" ? "string" : "number",
+                    prop: i >= offset ? props[i - offset] : ""
                 });
             }) : "";
-            return tbody
+            this.tfoot = _.tfoot(this.tfoot);
+            return _.tbody(tbody, {}, {
+                click: function (e) {
+                    _this.activeCell(e.target);
+                    _this.activeRow(e.target);
+                }
+            });
         },
         _sort: function (el) {
             var _this = this;
@@ -1092,7 +1113,7 @@ _package("grid", _, function () {
             th.setAttribute("seq", seq === "asc" ? "desc" :
                 "asc")
             _this.rs.sort(_.sortBy(prop, seq === "asc", typ))
-            var tbody = _.tbody(_this._tbody());
+            var tbody = _this._tbody();
             var oldTbody = _.query("tbody", _this.grid)
             oldTbody.parentNode.replaceChild(tbody, oldTbody)
         },
@@ -1117,8 +1138,7 @@ _package("grid", _, function () {
                             sql: `delete from ${tablename} where rowid=${rowid}`
                         })
                     })
-
-                    _this.del && _this.del(sqls);
+                    _this.events.del && _this.events.del(sqls);
 
                     // _this.emit("setSqlcmd",sqls)
                     // _this.setSqlcmd.call(_this)
@@ -1146,73 +1166,43 @@ _package("grid", _, function () {
             if (el.nodeName.toLowerCase() === "input" && el.getAttribute("type") === "checkbox") {
                 //全选
                 var inputs = _.queryAll("input[type='checkbox']", tbody);
-                inputs.forEach(function (t) {
+                inputs && inputs.forEach(function (t) {
                     t.checked = el.checked; //!t.checked;
                 })
             }
         },
-        activeCell:function(el){
-            var oldTd=_.query("td[active]",this.grid);
-            oldTd&& oldTd.removeAttribute("active")
-            var td = _.closest(el, "td");
-            if(["string","number"].indexOf(td.className)>=0)
-            td.setAttribute("active", "");
+        avtiveCol: function (el) {
+            this.inactiveCell()
+            var th = _.closest(el, "th");
+            var prop = th.getAttribute("prop");
+            var tds = _.queryAll("td[prop='" + prop + "']", this.grid);
+            tds && tds.forEach(function (t) {
+                t.setAttribute("active", "")
+            })
         },
-        activeRow:function(el){
-            var oldTr=_.query("tr[active]",this.grid);
-            oldTr&& oldTr.removeAttribute("active")
+        activeCell: function (el) {
+            this.inactiveCell()
+            var td = _.closest(el, "td");
+            if (td && ["string", "number"].indexOf(td.className) >= 0)
+                td.setAttribute("active", "");
+        },
+        inactiveCell: function () {
+            var td = _.queryAll("td[active]", this.grid);
+            td && td.forEach(function (t) {
+                t.removeAttribute("active")
+            })
+        },
+        activeRow: function (el) {
+            var oldTr = _.query("tr[active]", this.grid);
+            oldTr && oldTr.removeAttribute("active")
             var tr = _.closest(el, "tr");
-            tr.setAttribute("active", "");
+            tr && tr.setAttribute("active", "");
+        },
+        activeGrid: function (el) {
+            var table = _.query("table[active]")
+            table && table.removeAttribute("active")
+            this.grid.setAttribute("active", "");
         }
-
-        // _click: function (e) {
-        //     // click: function (e) {
-        //     var el = e.target,
-        //         thead = _.closest(el, "thead");
-        //         // table = _.closest(el, "table");
-        //         // table = _.closest(el, ".dataintable");
-        //         if (thead) {
-        //             var tbody = _.query("tbody", this.grid);
-        //             if (el.nodeName.toLowerCase() === "input" && el.getAttribute("type") === "checkbox") {
-        //                 //全选
-        //                 var inputs = _.queryAll("input[type='checkbox']", tbody);
-        //                 inputs.forEach(function (t) {
-        //                     t.checked = el.checked; //!t.checked;
-        //                 })
-        //             } else {
-        //                 //排序
-        //                 var td = _.closest(el, "th")
-        //                 if (!td) return;
-        //                 var prop = td.getAttribute("prop");
-        //                 if (prop) {
-        //                     var seq = td.getAttribute("seq")
-        //                     seq = seq === "desc" ? "asc" : "desc"
-        //                     _.queryAll("th[seq]", thead).forEach((t) => {
-        //                         t.removeAttribute("seq")
-        //                     })
-        //                     td.setAttribute("seq", seq)
-        //                     var tname = table.getAttribute("tablename");
-        //                     var options = {
-        //                         orderby: prop + " " + seq
-        //                     }
-        //                     _this.list([tname], options || {}, function (rs, tname) {
-        //                         tbody.parentNode.replaceChild(_this.createGrid(tname, rs, options, "tbody"), tbody)
-
-        //                         // _this.setSqlcmd.call(_this, tname)
-        //                     });
-        //                 }
-        //             }
-        //         } else {
-        //             var tr = _.closest(el, "tr")
-        //             if (!tr) return;
-        //             _.queryAll("tr[active]", table).forEach((t) => {
-        //                 t.removeAttribute("active")
-        //             })
-        //             tr.setAttribute("active", "");
-        //         }
-        //     // }
-        // }
-
     })
 });
 
@@ -1698,7 +1688,9 @@ _package("websql", _, function () {
                     tname: tname,
                     rs: rs,
                     tbl: _this.tbls[tname],
-                    del: _this.setSqlcmd
+                    events: {
+                        del: _this.setSqlcmd
+                    }
                 }, options))))
                 // _this.setSqlcmd.call(_this)
             });
@@ -1776,206 +1768,6 @@ _package("websql", _, function () {
             //     t.hide=_.type(rs[0][t.prop]) === "undefined"
             // })
         },
-        //生成表格 dom节点，可加载事件
-        // createGrid: function (tname, rs, options, resultType) {
-        //     var _this = this;
-        //     var tbl = this.getTbl(rs, tname);
-        //     var config = _.extend(this.getGridConfig(), options)
-        //     if (!resultType && config.fixedhead) {
-        //         resultType = "fixedhead"
-        //     }
-
-        //     var _row = function (r, i) {
-        //         var arr = _.obj2arr(r),
-        //             vals = arr.vals;
-        //         var cell = vals.map(function (t, j) {
-        //             //计算
-        //             switch (typs[j]) {
-        //                 case "number":
-        //                     var colIndex = j + offset;
-        //                     //数据行累加计算
-        //                     if (i > 0 && t) {
-        //                         tfoot[colIndex] += parseFloat(t);
-        //                     }
-        //                     //最后一行，处理小数
-        //                     if (i === len) {
-        //                         //保留1位并去掉多余0
-        //                         tfoot[colIndex] = parseFloat(tfoot[colIndex].toFixed(1))
-        //                     }
-        //                     break;
-        //                 case "date":
-        //                     t = [_.createEle("i", "", {
-        //                         class: "date"
-        //                     }), fmts[j] ? _time(t).format(fmts[j]) : t]
-
-        //                     break;
-        //             }
-        //             return _.td(t, {
-        //                 class: typs[j]
-        //             });
-        //         });
-        //         if (config.seq) cell.unshift(_.td(i === 0 ? "#" : i));
-        //         if (config.check) cell.unshift(_.td(_.checkbox()));
-
-
-        //         return _.tr(cell, {
-        //             rowid: i
-        //         })
-        //     }
-        //     //类型
-        //     var typs = [];
-        //     var fmts = [];
-        //     var offset = 0;
-        //     if (config.check) offset++;
-        //     if (config.seq) offset++;
-
-        //     var len = rs.length;
-        //     var showFoot = false;
-
-        //     //定义列宽
-        //     var defWidth = (100 - 5 * offset) / tbl.length + "%"
-        //     var colgroup = tbl.map(function (t) {
-        //         return _.col("", {
-        //             // style: "width: " + (t.width ? t.width : "auto") + ";"
-
-        //             style: "width: " + (t.width ? t.width : defWidth) + ";"
-        //         })
-        //     })
-        //     if (config.seq) colgroup.unshift(_.col("", {
-        //         style: "width: 5%;"
-        //     }));
-        //     if (config.check) colgroup.unshift(_.col("", {
-        //         style: "width: 5%;"
-        //     }));
-
-
-        //     var orderby = config.orderby || ""
-        //     var thead =
-        //         tbl.map(function (t) {
-        //             var typ = t.type ? t.type : "string";
-        //             var fmt = t.format ? t.format : "";
-        //             var lable = t.label ? t.label : t;
-        //             var prop = t.prop ? t.prop : t;
-        //             var seq = "";
-        //             var hide = !!t.hide;
-        //             if (!config.label) lable = prop;
-        //             //排序
-        //             if (prop === orderby.split(" ")[0]) {
-        //                 seq = orderby.split(" ")[1] || "asc"
-        //             }
-
-
-        //             if (!hide) {
-        //                 if (typ === "number" && config.statistic) showFoot = true;
-        //                 typs.push(typ);
-        //                 fmts.push(fmt);
-        //             }
-        //             return hide ? "" : _.th([_.div(lable, {
-        //                 class: "text"
-        //             }), _.div("", {
-        //                 class: "icon"
-        //             })], {
-        //                 class: typ,
-        //                 prop: prop,
-        //                 seq: seq
-        //             });
-        //         });
-
-        //     if (config.seq) thead.unshift(_.th("#"));
-        //     if (config.check) thead.unshift(_.th(_.checkbox()));
-        //     var tfoot = new Array(offset).fill("").concat(typs).map(function (t, i) {
-        //         return i === 0 ? "合计" : t === "number" ? 0 : "";
-        //     });
-        //     var tbody =
-        //         len === 0 ? _.createEle("tr td", "未查到记录", {
-        //             colspan: tbl.length + offset
-        //         }) :
-        //         rs.map(function (r, i) {
-        //             return _row(r, i + 1)
-        //         });
-
-        //     tfoot = showFoot ? tfoot.map(function (t) {
-        //         return _.td(t, {
-        //             class: t === "" ? "string" : "number"
-        //         });
-        //     }) : "";
-
-        //     var optPanel = _.div([_.btn("删除", {}, {
-        //         click: function (e) {
-        //             var el = e.target,
-        //                 table = _.closest(el, ".dataintable");
-        //             var cbs = _.queryAll("tbody input[type='checkbox']:checked", table);
-        //             var tablename = table.getAttribute("tablename")
-        //             // var sql=""
-        //             cbs.forEach(function (t) {
-        //                 //  sql=`delete from ${tablename} where id=`
-        //                 var tr = _.closest(t, "tr")
-        //                 var rowid = tr.getAttribute("rowid")
-        //                 _this.sqls.push({
-        //                     tbl: tbl,
-        //                     sql: `delete from ${tablename} where rowid=${rowid}`
-        //                 })
-        //             })
-        //             _this.setSqlcmd.call(_this)
-
-        //         }
-        //     }), _.btn("取消", {}, {
-        //         click: function (e) {
-        //             var el = e.target,
-        //                 table = _.closest(el, ".dataintable");
-        //             var cbs = _.queryAll("input[type='checkbox']:checked", table);
-        //             cbs.forEach(function (t) {
-        //                 t.checked = false;
-        //             })
-        //             optPanel.style.overflow = "hidden"
-
-        //         }
-        //     })], {
-        //         class: "optPanel"
-        //     })
-        //     switch (resultType) {
-        //         case "colgroup":
-        //             _.colgroup(colgroup);
-        //             break;
-        //         case "thead":
-        //             return _.thead(thead);
-        //             break;
-        //         case "tbody":
-        //             return _.tbody(tbody);
-        //             break;
-        //         case "tfoot":
-        //             return _.tfoot(tfoot);
-        //             break;
-        //         case "fixedhead":
-        //             var cols = _.colgroup(colgroup)
-        //             return _.div([
-        //                 _.div(_.table([cols, _.thead(thead)], {
-        //                     // class: "dataintable",
-        //                     tablename: tname
-        //                 }), {
-        //                     class: "table-fixed-head"
-        //                 }),
-        //                 _.div(_.table([cols.cloneNode(true), _.tbody(tbody), _.tfoot(tfoot)], {
-        //                     // class: "dataintable",
-        //                     tablename: tname
-        //                 }), {
-        //                     class: "table-fixed-body"
-        //                 })
-
-        //             ], {
-        //                 class: "dataintable",
-        //                 tablename: tname
-        //             })
-        //             break;
-        //         default:
-        //             return _.div([_.table([_.colgroup(colgroup), _.thead(thead), _.tbody(tbody), _.tfoot(tfoot)], {
-        //                 tablename: tname
-        //             }), optPanel], {
-        //                 class: "dataintable",
-        //                 tablename: tname
-        //             });
-        //     }
-        // },
         //字符串拼接方式 生成表格
         grid: function (tname, rs, options) {
             var tbl = this.tbls[tname];
@@ -2174,7 +1966,9 @@ _package("websql", _, function () {
                                 bd.appendChild(_.li(_.grid(_.extend({
                                     tbl: tbl,
                                     rs: rs,
-                                    del: _this.setSqlcmd
+                                    events: {
+                                        del: _this.setSqlcmd
+                                    }
                                 }, options))))
                                 tnames.push(tname)
                                 _this.activeHd(tnames)

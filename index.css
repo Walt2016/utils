@@ -622,6 +622,7 @@ table thead th[seq='asc'] .icon::before {
 
 
 
+
 .dataintable table td {
     vertical-align: text-top;
     padding: 6px 15px 6px 6px;
@@ -634,6 +635,12 @@ table thead th[seq='asc'] .icon::before {
 .dataintable table td.date,.dataintable table th{
     white-space: nowrap;
 }
+.dataintable table th.hidden,
+.dataintable table td.hidden
+{
+    display: none;
+}
+
 
 .dataintable table tr:nth-child(odd) {
     background-color: #F5F5F5;
