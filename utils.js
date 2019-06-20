@@ -167,7 +167,11 @@ _package("_", this, function () {
                 t && _run.call(this, t, times);
             });
         },
-
+        forEach: function (arr, callback) {
+            for (var i = 0; i < arr.length; i++) {
+                callback(arr[i])
+            }
+        },
         start: function (tag, options) {
             var sb = [];
             sb.push('<');
@@ -1083,9 +1087,16 @@ _package("grid", _, function () {
             var typs = this.typs;
             var tbl = this.tbl;
             var props = this.props;
-            this.tfoot = new Array(offset).fill("").concat(typs).map(function (t, i) {
+            var tfoot = [];
+            for (var i = 0; i < offset; i++) {
+                tfoot.push("")
+            }
+            this.tfoot = tfoot.concat(typs).map(function (t, i) {
                 return i === 0 ? "合计" : t === "number" ? 0 : "";
             });
+            // this.tfoot = new Array(offset).fill("").concat(typs).map(function (t, i) {
+            //     return i === 0 ? "合计" : t === "number" ? 0 : "";
+            // });
             var tbody =
                 count === 0 ? _.createEle("tr td", "未查到记录", {
                     colspan: tbl.length + offset
@@ -1115,7 +1126,7 @@ _package("grid", _, function () {
             var seq = th.getAttribute("seq")
             var typ = th.getAttribute("class")
             var ths = _.queryAll("th[seq]", _this.grid)
-            ths.forEach(function (t) {
+            _.forEach(ths, function (t) {
                 if (t.getAttribute("prop") !== prop)
                     t.setAttribute("seq", "")
             })
@@ -1138,13 +1149,13 @@ _package("grid", _, function () {
                     var tablename = table.getAttribute("tablename")
                     // var sql=""
                     var sqls = []
-                    cbs.forEach(function (t) {
+                    _.forEach(cbs, function (t) {
                         //  sql=`delete from ${tablename} where id=`
                         var tr = _.closest(t, "tr")
                         var rowid = tr.getAttribute("rowid")
                         sqls.push({
                             tbl: tbl,
-                            sql: `delete from ${tablename} where rowid=${rowid}`
+                            // sql: `delete from ${tablename} where rowid=${rowid}`
                         })
                     })
                     _this.events.del && _this.events.del(sqls);
@@ -1156,11 +1167,10 @@ _package("grid", _, function () {
                         table = _.closest(el, ".dataintable");
                     var cbs = _.queryAll(
                         "input[type='checkbox']:checked", table);
-                    cbs.forEach(function (t) {
+                    _.forEach(cbs, function (t) {
                         t.checked = false;
                     })
                     optPanel.style.overflow = "hidden"
-
                 }
             })], {
                 class: "optPanel"
@@ -1172,7 +1182,7 @@ _package("grid", _, function () {
             if (el.nodeName.toLowerCase() === "input" && el.getAttribute("type") === "checkbox") {
                 //全选
                 var inputs = _.queryAll("input[type='checkbox']", tbody);
-                inputs && inputs.forEach(function (t) {
+                inputs && _.forEach(inputs, function (t) {
                     t.checked = el.checked; //!t.checked;
                 })
             }
@@ -1182,7 +1192,7 @@ _package("grid", _, function () {
             var th = _.closest(el, "th");
             var prop = th.getAttribute("prop");
             var tds = _.queryAll("td[prop='" + prop + "']", this.grid);
-            tds && tds.forEach(function (t) {
+            tds && _.forEach(tds, function (t) {
                 t.setAttribute("active", "")
             })
         },
@@ -1194,7 +1204,7 @@ _package("grid", _, function () {
         },
         inactiveCell: function () {
             var td = _.queryAll("td[active]", this.grid);
-            td && td.forEach(function (t) {
+            td && _.forEach(td, function (t) {
                 t.removeAttribute("active")
             })
         },
@@ -1228,7 +1238,7 @@ _package("grid", _, function () {
                         break;
                     case 37: //左箭头
                         var cell = _.query("td[active]", grid)
-                        if(!cell) return;
+                        if (!cell) return;
                         if (cell.hasAttribute("update")) {
                             return
                         }
@@ -1255,19 +1265,16 @@ _package("grid", _, function () {
                         var cell = _.query("td[active]", grid)
                         var prop = cell.getAttribute("prop")
 
-                        // var newRow=_.query
                         tr.removeAttribute("active")
                         cell.removeAttribute("active")
-                        // var newRow = tr.pre.nextSibling;
+
 
                         var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
                         if (newRow) {
                             newRow.setAttribute("active", "")
                             var newCell = _.query("td[prop='" + prop + "']", newRow)
                             newCell.setAttribute("active", "")
-
                         }
-
                         break;
                     case 40: //下箭头
                         var tr = _.query("tr[active]", grid)
@@ -1277,7 +1284,6 @@ _package("grid", _, function () {
                         var cell = _.query("td[active]", grid)
                         var prop = cell.getAttribute("prop")
 
-                        // var newRow=_.query
                         tr.removeAttribute("active")
                         cell.removeAttribute("active")
                         var newRow = tr.nextSibling;
@@ -1385,10 +1391,10 @@ _package("websql", _, function () {
             this.db.transaction(function (tx) {
                 for (var t in tbls) {
                     var flds = tbls[t].map(function (t) {
-
                         return (t.prop ? t.prop : t) + (t.pk ? " unique" : "");
                     });
-                    var sql = `CREATE TABLE IF NOT EXISTS ${t}(${flds})`
+                    // var sql = `CREATE TABLE IF NOT EXISTS ${t}(${flds})`
+                    var sql = "CREATE TABLE IF NOT EXISTS ${t}(${flds})".replace("${t}", t).replace("${flds}", flds)
                     console.log(sql)
                     _this.sqls.push({
                         tbl: t,
@@ -1429,7 +1435,8 @@ _package("websql", _, function () {
                     });
                     _this.sqls.push({
                         tbl: tbl,
-                        sql: `INSERT INTO ${tbl}(${flds}) values(${vs})`
+                        // sql: `INSERT INTO ${tbl}(${flds}) values(${vs})`
+                        sql: "INSERT INTO ${tbl}(${flds}) values(${vs})".replace("${tbl}", tbl).replace("${flds}", flds).replace("${vs}", vs)
                     })
                     // tx.executeSql(sql, vs, function (tx, result) {
                     //     console.log("insert ok")
@@ -1452,7 +1459,8 @@ _package("websql", _, function () {
             _this.sqls = []
             for (var t in tbls) {
                 _this.sqls.push({
-                    sql: `DELETE FROM ${t}`,
+                    // sql: `DELETE FROM ${t}`,
+                    sql: "DELETE FROM ${t}".replace("${t}", t),
                     tbl: t
                 })
             }
@@ -1477,7 +1485,8 @@ _package("websql", _, function () {
             // });
         },
         del: function (tbl, ids) {
-            var sql = `DELETE FROM ${tbl} Where rowid in [${ids}]`
+            // var sql = `DELETE FROM ${tbl} Where rowid in [${ids}]`
+            var sql = "DELETE FROM ${tbl} Where rowid in [${ids}]".replace("${tbl}", tbl).replace("${ids}", ids)
 
             this.exe({
                 sql: sql,
@@ -1498,7 +1507,8 @@ _package("websql", _, function () {
             _this.sqls = []
             for (var t in tbls) {
                 _this.sqls.push({
-                    sql: `drop table ${t}`,
+                    // sql: `drop table ${t}`,
+                    sql: "drop table ${t}".replace("${t}", t),
                     tbl: t
                 })
             }
@@ -1526,10 +1536,11 @@ _package("websql", _, function () {
 
             var tbls = tbls || [];
             var _this = this;
-            _this.sqls = tbls.map(t => {
+            _this.sqls = tbls.map(function (t) {
                 return {
                     tbl: t,
-                    sql: `SELECT * FROM ${t} ${condition}`
+                    // sql: `SELECT * FROM ${t} ${condition}`
+                    sql: "SELECT * FROM ${t} ${condition}".replace("${t}", t).replace("${condition}", condition)
                 }
             })
             this.exe(_this.sqls, callback)
@@ -1569,7 +1580,7 @@ _package("websql", _, function () {
             }
             this.db.transaction(function (tx) {
                 if (_.type(sql) === "array") {
-                    sql.forEach(t => {
+                    sql.forEach(function (t) {
                         store(tx, t.sql, t.tbl)
                     })
 
@@ -1581,7 +1592,9 @@ _package("websql", _, function () {
         },
         log: function (sql, duration) {
             // var sql=`insert into`
-            var sqlLog = `INSERT INTO sys_log values(?,?,?)`;
+            // var sqlLog = `INSERT INTO sys_log values(?,?,?)`;
+            var sqlLog = "INSERT INTO sys_log values(?,?,?)";
+
             var vals = [+new Date(), sql, duration]
             this.db.transaction(function (tx) {
                 tx.executeSql(sqlLog, vals, function (tx, results) {
@@ -1687,7 +1700,7 @@ _package("websql", _, function () {
             }, {
                 key: "log",
                 val: "日志"
-            }].map((t) => {
+            }].map(function (t) {
                 return _.btn(t.val, {
                     class: t.key
                 })

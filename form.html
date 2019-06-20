@@ -1,16 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
+    <style>
+        /* .form-group {
+            position: relative;
+            padding-top: 1.5rem;
+        }
+
+        label {
+            position: absolute;
+            top: 0;
+            font-size: var(--font-size-small);
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.2s ease-out;
+        }
+
+        input:placeholder-shown+label {
+            opacity: 0;
+            transform: translateY(1rem);
+        }
+
+        input:required+.help-text::before {
+            content: '*Required';
+        }
+
+        input:optional+.help-text::before {
+            content: '*Optional';
+        }
+
+        &:disabled {
+            border-color: var(--gray-lighter);
+            background-color: var(--gray-lightest);
+            color: var(--gray-light);
+        } */
+
+        /* input:read-only {
+            border-color: var(--gray-lighter);
+            color: var(--gray);
+            cursor: not-allowed;
+        } */
+
+        input[readonly] {
+            cursor: not-allowed;
+        }
+
+        /* td>input{
+            padding: 0px;
+        } */
+    </style>
+    <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
-    <form action="" method="post">
-        <div>
-            
-        </div>
+    <div class="form-group">
+        <input type="text" id="dynamic-label-input" placeholder="Enter some text">
+        <label for="dynamic-label-input">Enter some text</label>
+    </div>
+
+    <div class="form-group">
+        <label for="required-input">Required input</label>
+        <input type="text" id="required-input" required>
+        <span class="help-text"></span>
+    </div>
+
+
+    <div class="form-group">
+        <input type="text" value="Read-only value" readonly>
+    </div>
+
+<br><br><br><br>
+
+
+
+    <form action="12.19.html" method="get" class="dataintable">
+        <input type="hidden" value="123">
+        <table>
+            <tr>
+                <td>用户名：</td>
+                <td update><input type="text" placeholder="这是用户名"></td>
+            </tr>
+            <tr>
+                <td>密码：</td>
+                <td update><input type="password" placeholder="这是密码"></td>
+            </tr>
+            <tr>
+                <td align="">性别：</td>
+                <td><label><input type="radio" name="sex" value="man">男</label>
+                    <input id="woman" type="radio" name="sex" value="woman">
+                    <label for="woman">女</label>
+                </td>
+                <td align="left">喜欢哪种家宠</td>
+                <td><input type="radio" checked="checked" name="jc" value="dog">狗</td>
+                <td><input type="radio" checked="checked" name="jc" value="cat">猫</td>
+            </tr>
+            <tr>
+                <td align="right">兴趣：</td>
+                <td>
+                    <input type="checkbox" name="xq" value="lq" class="checkbox">篮球
+                    <input type="checkbox" name="xq" value="lq" class="checkbox">足球
+                    <input type="checkbox" name="xq" value="jq" class="checkbox">毽球
+                </td>
+                <td align="right">舞蹈种类</td>
+                <td>
+                    <select name="" id="" multiple size="1">
+                        <option value="1">拉丁舞</option>
+                        <option value="1">民族舞</option>
+                        <option value="1" selected>肚皮舞</option>
+                    </select>
+                </td>
+                <td align="right"></td>
+            </tr>
+            <tr>
+                <td align="left">个人介绍</td>
+                <td><textarea name="" id=""></textarea></td>
+            </tr>
+        </table>
+        <input type="button" value="普通按钮">
+        <input type="reset">
+        <input type="submit">
     </form>
+
+
+
+    <!-- <form action="" method="post">
+        <label for="user">姓名:</label>
+        <input type="text" id=user name="user" value="" /><br />
+
+        <label for="email">邮件:</label>
+        <input type="text" id=email name="email" value="" /><br />
+
+        <label for="comment">备注:</label>
+        <textarea id=comment name="comment">
+                </textarea><br />
+
+        <input type="submit" id="sbutton" value="确定" /><br />
+    </form> -->
+
 </body>
+
 </html>
