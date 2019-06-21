@@ -167,10 +167,21 @@ _package("_", this, function () {
                 t && _run.call(this, t, times);
             });
         },
+        //兼容IE ，替换(Array like) nodeList.forEach
         forEach: function (arr, callback) {
             for (var i = 0; i < arr.length; i++) {
                 callback(arr[i])
             }
+        },
+        append: function (el, child) {
+            if (_.type(el) === "string") {
+                el = _.query(el)
+                if (_.type(child) === "string") {
+                    child = document.createTextNode(child)
+                }
+                el && el.appendChild(child)
+            }
+            el.appendChild(child)
         },
         start: function (tag, options) {
             var sb = [];

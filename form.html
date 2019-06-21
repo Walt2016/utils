@@ -121,11 +121,37 @@
                 <td><textarea name="" id=""></textarea></td>
             </tr>
         </table>
-        <input type="button" value="普通按钮">
-        <input type="reset">
-        <input type="submit">
+        <input type="button" value="普通按钮" class="btn">
+        <input type="reset" class="btn">
+        <input type="submit" class="btn">
     </form>
 
+    <div class="wrap"></div>
+    <script src="utils.js"></script>
+<script>
+
+var filterBlocks=[{
+    label:"Office Code"
+    
+},{
+    label:"Acceptance No"
+}]
+
+// var li=_.li
+var ul=_.ul(filterBlocks.map(function(t){
+    return _.li([_.checkbox(),t.label])
+}),{},{
+    click:function(e){
+        var el=e.target;
+        console.log(el)
+    }
+})
+
+// _.query(".wrap").appendChild(ul)
+
+_.append(".wrap",ul)
+
+</script>
 
 
     <!-- <form action="" method="post">
