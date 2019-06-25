@@ -58,7 +58,7 @@
 </head>
 
 <body>
-    <div class="form-group">
+    <!-- <div class="form-group">
         <input type="text" id="dynamic-label-input" placeholder="Enter some text">
         <label for="dynamic-label-input">Enter some text</label>
     </div>
@@ -74,7 +74,7 @@
         <input type="text" value="Read-only value" readonly>
     </div>
 
-<br><br><br><br>
+    <br><br><br><br>
 
 
 
@@ -124,34 +124,173 @@
         <input type="button" value="普通按钮" class="btn">
         <input type="reset" class="btn">
         <input type="submit" class="btn">
-    </form>
+    </form> -->
 
-    <div class="wrap"></div>
+    <div class="nav"></div>
+    <div class="conditionBlockList"></div>
+    <div class="result"></div>
     <script src="utils.js"></script>
-<script>
+    <script>
+        //criteria
 
-var filterBlocks=[{
-    label:"Office Code"
-    
-},{
-    label:"Acceptance No"
-}]
+        var subject = [{
+                label: "subject1",
+                filters: [1, 3]
+            },
+            {
+                label: "subject2",
+                filters: [1, 2]
+            },
+            {
+                label: "subject3",
+                filters: [1, 2, 3]
+            }
+        ]
 
-// var li=_.li
-var ul=_.ul(filterBlocks.map(function(t){
-    return _.li([_.checkbox(),t.label])
-}),{},{
-    click:function(e){
-        var el=e.target;
-        console.log(el)
-    }
-})
+        var filterBlocks = [{
+            id: 1,
+            label: "Office Code"
 
-// _.query(".wrap").appendChild(ul)
+        }, {
+            id: 2,
+            label: "Acceptance No"
+        }, {
+            id: 3,
+            label: "UW Year"
+        }]
 
-_.append(".wrap",ul)
+        var select = _.select([""].concat(subject.map(function (t, i) {
+            return {
+                value: t.filters,
+                label: t.label
+            }
+        })), function (val) {
+            var checks = _.queryAll("input[type='checkbox']", ".conditionNamelist");
+            console.log(checks)
+            checks && checks.forEach(function (t) {
+                t.checked = false;
+            })
+            var ids = val.split(",")
+            ids && ids.forEach(function (t) {
+                _.query("#checkobx_" + t).checked = true;
+            })
+        })
 
-</script>
+
+        var ul = _.ul(filterBlocks.map(function (t) {
+            return _.li(_.checkbox({
+                label: t.label,
+                id: "checkobx_" + t.id
+            }))
+        }), {
+            class: "conditionNamelist"
+        }, {
+            click: function (e) {
+                var el = e.target;
+                console.log(el)
+            }
+        })
+
+        var tbn = _.btn("next", {
+            name: "btn"
+        }, {
+            click: function (e) {
+                console.log(e.target)
+                var ckbs = _.queryAll(".checkbox:checked", ".conditionNamelist")
+                // console.log(ckbs)
+                // var labels = []
+                _.empty(".conditionBlockList")
+                _.forEach(ckbs, function (t) {
+                    // labels.push(t.label)
+                    _conditionBlock(_.get(t, "label"))
+                })
+                if (ckbs.length > 0) {
+                    _submitBtn()
+                }
+
+
+            }
+        })
+
+        _.append(".nav", [select, ul, tbn])
+
+
+        var _conditionBlock = function (label) {
+            var title = _.div(label, {
+                class: "title"
+            })
+            var range = _.rangeInput({
+                label: "range",
+                from: {
+                    placeholder: "from"
+                },
+                to: {
+                    placeholder: "to"
+                }
+            })
+            var list = _.listInput({
+                label: "list",
+                size: 1
+            })
+
+            var wrap = _.div([title, range, list], {
+                class: "conditionBlock"
+            })
+
+            _.append(".conditionBlockList", wrap)
+
+        }
+        var _submitBtn = function () {
+            var btn = _.btn("提交", {
+                name: "btn"
+            }, {
+                click: function (e) {
+                    var el = e.target;
+                    var conditionBlockList = _.closest(el, ".conditionBlockList");
+
+                    var title = _.query(".title", conditionBlockList)
+                    title = title.innerText;
+
+                    var from = _.query("input[name='from']").value
+                    var to = _.query("input[name='to']").value
+
+                    var range = ""; // "WHERE [column_name] BETWEEN from AND to"
+                    if (from && !to) {
+                        range = "WHERE [column_name] >= from"
+                    }
+                    if (!from && to) {
+                        range = "WHERE [column_name] <= to"
+                    }
+                    if (from && to) {
+                        range = "WHERE [column_name] BETWEEN from AND to"
+                    }
+
+                    range = range.replace("column_name", title)
+                    range = range.replace("from", from)
+                    range = range.replace("to", to)
+
+
+                    var list = "WHERE [column_name] IN (values)"
+                    list = list.replace("column_name", title)
+
+                    var items = _.queryAll("input[name='item']")
+                    var vals = []
+                    _.forEach(items, function (t) {
+                        t.value&& vals.push(t.value)
+                    })
+                    if (vals.length>0) {
+                        list = list.replace("values", vals)
+                    } else {
+                        list = ""
+                    }
+
+                    _.empty(".result")
+                    _.append(".result", [range, list])
+                }
+            })
+            _.append(".conditionBlockList", btn)
+        }
+    </script>
 
 
     <!-- <form action="" method="post">

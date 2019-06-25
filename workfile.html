@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        .hide {
+            display: none
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav"></div>
+    <div class="blockList"></div>
+    <div class="result"></div>
+    <div class="hide" id="dialog">
+
+        <div>保存</div>
+        <input value="" type="text" name="from" placeholder="from">
+        <div class="btn" name="btn" id="saveWorkfile">save</div>
+
+    </div>
+    <script src="utils.js"></script>
+    <script>
+        var subject = [{
+                label: "subject1",
+                filters: [1, 3]
+            },
+            {
+                label: "subject2",
+                filters: [1, 2]
+            },
+            {
+                label: "subject3",
+                filters: [1, 2, 3]
+            }
+        ]
+
+        var filterBlocks = [{
+            id: 1,
+            label: "Office Code",
+            inputs: [{
+                    label: "include range",
+                    type: "range"
+                },
+                {
+                    label: "include list",
+                    type: "list",
+                    size: 1
+                }
+            ]
+        }, {
+            id: 2,
+            label: "Acceptance No",
+            inputs: [{
+                    label: "include list",
+                    type: "list",
+                    size: 2
+                },
+                {
+                    label: "include range",
+                    type: "range"
+                }, {
+                    label: "omit list",
+                    type: "list",
+                    size: 2
+                },
+                {
+                    label: "omit range",
+                    type: "range"
+                },
+
+            ]
+        }, {
+            id: 3,
+            label: "UW Year",
+            inputs: [{
+                    label: "include range",
+                    type: "range"
+                },
+                {
+                    label: "include list",
+                    type: "list",
+                    size: 3
+                }
+            ]
+        }]
+
+        var selectBlocks = [];
+
+
+
+        var _select = function () {
+            var workfile = _.storage.get("workfile") || subject;
+            var select = _.select([""].concat(workfile.map(function (t, i) {
+                return {
+                    value: t.filters,
+                    label: t.label
+                }
+            })), function (val) {
+                selectBlocks = filterBlocks.filter(function (t) {
+                    return val.indexOf(t.id) >= 0
+                })
+                console.log(selectBlocks)
+
+                var checks = _.queryAll("input[type='checkbox']", ".namelist");
+                console.log(checks)
+                checks && checks.forEach(function (t) {
+                    t.checked = false;
+                })
+                var ids = val.split(",")
+                ids && ids.forEach(function (t) {
+                    var checkbox = _.query("#checkobx_" + t)
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                })
+            })
+            return select
+        }
+
+        var select = _select();
+
+        var ul = _.ul(filterBlocks.map(function (t) {
+            return _.li(_.checkbox({
+                label: t.label,
+                id: "checkobx_" + t.id,
+                blockId: t.id
+            }))
+        }), {
+            class: "namelist"
+        }, {
+            click: function (e) {
+                var el = e.target;
+                console.log(el)
+            }
+        })
+        var getBlock = function (id) {
+            return filterBlocks.filter(function (t) {
+                return t.id == id
+            })[0]
+        }
+
+        var tbn = _.btn("next", {
+            name: "btn"
+        }, {
+            click: function (e) {
+                console.log(e.target)
+                var ckbs = _.queryAll(".checkbox:checked", ".namelist")
+                _.empty(".blockList")
+                _.forEach(ckbs, function (t) {
+                    var blockId = Number(_.get(t, "blockId"))
+                    var block = getBlock(blockId)
+                    _block(block)
+
+                    // _block(_.get(t, "label"))
+                })
+                if (ckbs.length > 0) {
+                    _submitBtn()
+                }
+            }
+        })
+        _.append(".nav", [select, ul, tbn])
+        var _block = function (block) {
+            var title = _.div(block.label, {
+                class: "title"
+            })
+            var blockItems = [title]
+
+            block.inputs.forEach(function (t) {
+                switch (t.type) {
+                    case "range":
+                        var range = _.rangeInput({
+                            label: t.label || "range",
+                            from: {
+                                placeholder: "from"
+                            },
+                            to: {
+                                placeholder: "to"
+                            }
+                        })
+                        blockItems.push(range)
+                        break;
+                    case "list":
+                        var list = _.listInput({
+                            label: t.label || "list",
+                            size: t.size || 1
+                        })
+                        blockItems.push(list)
+                        break;
+                }
+            })
+
+
+            var wrap = _.div(blockItems, {
+                class: "block",
+                blockid: block.id
+            })
+
+            _.append(".blockList", wrap)
+
+        }
+        var _submitBtn = function () {
+            var btn = _.btn("查询", {
+                name: "btn"
+            }, {
+                click: function (e) {
+                    var el = e.target;
+                    var blockList = _.closest(el, ".blockList");
+
+                    var title = _.query(".title", blockList)
+                    title = title.innerText;
+
+                    var from = _.query("input[name='from']").value
+                    var to = _.query("input[name='to']").value
+
+                    var range = ""; // "WHERE [column_name] BETWEEN from AND to"
+                    if (from && !to) {
+                        range = "WHERE [column_name] >= from"
+                    }
+                    if (!from && to) {
+                        range = "WHERE [column_name] <= to"
+                    }
+                    if (from && to) {
+                        range = "WHERE [column_name] BETWEEN from AND to"
+                    }
+
+                    range = range.replace("column_name", title)
+                    range = range.replace("from", from)
+                    range = range.replace("to", to)
+
+
+                    var list = "WHERE [column_name] IN (values)"
+                    list = list.replace("column_name", title)
+
+                    var items = _.queryAll("input[name='item']")
+                    var vals = []
+                    _.forEach(items, function (t) {
+                        t.value && vals.push(t.value)
+                    })
+                    if (vals.length > 0) {
+                        list = list.replace("values", vals)
+                    } else {
+                        list = ""
+                    }
+
+                    _.empty(".result")
+                    _.append(".result", [range, list])
+                }
+            })
+
+            var btn2 = _.btn("保存workfile", {
+                class: "btn"
+            }, {
+                click: function () {
+                    var dialog = _.query("#dialog")
+                    _.show(dialog)
+
+                }
+            })
+            _.append(".blockList", [btn, btn2])
+        }
+        var saveWorkfile = _.query("#saveWorkfile")
+        _.addEvent("click", saveWorkfile, function () {
+            var dialog = _.query("#dialog")
+            var name = _.query("input", dialog).value
+
+            _.hide(dialog)
+
+            var workfile = _.storage.get("workfile");
+            if (workfile) {
+
+                workfile.push({
+                    label: name
+                })
+                console.log(workfile)
+                _.storage.set("workfile", workfile)
+
+                _.replace(select, _select())
+
+                // name
+            } else {
+
+                _.storage.set("workfile", subject)
+            }
+        })
+    </script>
+</body>
+
+</html>

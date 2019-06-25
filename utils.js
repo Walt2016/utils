@@ -134,6 +134,9 @@ _package("_", this, function () {
             return ele;
         },
         queryAll: function (selectors, rootEle) {
+            if (_.type(rootEle) === "string") {
+                rootEle = _.query(rootEle)
+            }
             if (rootEle) {
                 rootEle = _.autoId(rootEle)
                 return document.querySelectorAll("#" + rootEle.id + " " + selectors)
@@ -141,6 +144,9 @@ _package("_", this, function () {
             return document.querySelectorAll(selectors)
         },
         query: function (selectors, rootEle) {
+            if (_.type(rootEle) === "string") {
+                rootEle = _.query(rootEle)
+            }
             if (rootEle) {
                 rootEle = _.autoId(rootEle)
                 return document.querySelector("#" + rootEle.id + " " + selectors)
@@ -174,14 +180,64 @@ _package("_", this, function () {
             }
         },
         append: function (el, child) {
+            var _append = function (el, child) {
+                if (_.type(child) === "array") {
+                    _.forEach(child, function (t) {
+                        t = _createTextNode(t)
+                        el && el.appendChild(t)
+                    })
+                } else {
+                    child = _createTextNode(child)
+                    el && el.appendChild(child)
+                }
+            }
+            var _createTextNode = function (t) {
+                if (["string", "number", "date"].indexOf(_.type(t)) >= 0) {
+                    t = document.createTextNode(t)
+                }
+                return t
+            }
             if (_.type(el) === "string") {
                 el = _.query(el)
-                if (_.type(child) === "string") {
-                    child = document.createTextNode(child)
-                }
-                el && el.appendChild(child)
             }
-            el.appendChild(child)
+            //_.type(child) === "string"
+            // if (["string", "number", "date"].indexOf(_.type(child)) >= 0) {
+            //     child = document.createTextNode(child)
+            // }
+
+            _append(el, child)
+        },
+        replace:function(ele,newEle){
+            ele.parentNode.replaceChild(newEle, ele)
+        },
+        empty: function (el) {
+            if (_.type(el) === "string") {
+                el = _.query(el)
+            }
+            el.innerText = "";
+        },
+        get: function (el, prop) {
+            if (el.tagName === "input" && prop === "value") {
+                return el[prop]
+            }
+            if (["tagName"].indexOf(prop) >= 0) { //,"name","id"
+                return el[prop]
+            }
+            return el.getAttribute(prop)
+        },
+        set: function (el, key, val) {
+            el.setAttribute(key, val)
+            // var tag = el.tagName;
+            // var _set = function (key, val) {
+            //     if (tag.toLowerCase() === "input" && key === "checked") {
+            //         if (val) {
+            //             ele.setAttribute(key, val)
+            //         }
+            //     } else {
+            //         ele.setAttribute(key, val)
+            //     }
+            // }
+            // _set(key, val)
         },
         start: function (tag, options) {
             var sb = [];
@@ -217,6 +273,7 @@ _package("_", this, function () {
                     case "number":
                     case "date":
                         ele.appendChild(document.createTextNode(text));
+                        // _.append(ele,text)
                         break;
                     case "array":
                         text.forEach(function (t) {
@@ -237,6 +294,7 @@ _package("_", this, function () {
             }
             var _appendProps = function (ele, props) {
                 for (var key in props) {
+                    // _.set(ele, key, props[key])
                     if (tag.toLowerCase() === "input" && key === "checked") {
                         if (props[key]) {
                             ele.setAttribute(key, props[key])
@@ -326,40 +384,6 @@ _package("_", this, function () {
             _appendEvents(ele, events);
             return ele;
         },
-        checkbox: function (options) {
-            var checkbox = _.createEle("input", "", _.extend({
-                type: "checkbox",
-                class: "checkbox"
-            }, options), {
-                click: function (e) {
-                    var el = e.target,
-                        table = _.closest(el, ".dataintable");
-                    var numb = _.queryAll("input[type='checkbox']:checked", table).length
-                    var optPanel = _.query(".optPanel", table)
-                    if (optPanel) {
-                        if (numb === 0) {
-                            optPanel.style.overflow = "hidden"
-                            // optPanel.style.bottom = '-55px';
-                        } else {
-                            // optPanel.style.bottom = '-0px';
-                            optPanel.style.overflow = "visible"
-                            // var HistoryCountSpan=_.query(".HistoryCountSpan")
-                            // HistoryCountSpan.innerText = numb
-                        }
-                    }
-                }
-            })
-            if (options) {
-                var label = _.div(options.label, {
-                    class: "label"
-                })
-                return _.div([checkbox, label], {
-                    class: "input-group"
-                });
-            } else {
-                return checkbox
-            }
-        },
         btn: function (text, props, events) {
             if (props && props.class) {
                 props.class = "btn " + props.class
@@ -398,6 +422,64 @@ _package("_", this, function () {
                 src: options
             })
         },
+        checkbox: function (options) {
+            if (_.type(options) === "string") {
+                options = {
+                    label: options
+                }
+            }
+            var label;
+            if (options && options.label) {
+                label = _.div(options.label, {
+                    class: "label"
+                })
+            }
+            var checkbox = _.createEle("input", "", _.extend({
+                type: "checkbox",
+                class: "checkbox"
+            }, options), {
+                click: function (e) {
+                    var el = e.target,
+                        table = _.closest(el, ".dataintable");
+                    var numb = _.queryAll("input[type='checkbox']:checked", table).length
+                    var optPanel = _.query(".optPanel", table)
+                    if (optPanel) {
+                        if (numb === 0) {
+                            optPanel.style.overflow = "hidden"
+                            // optPanel.style.bottom = '-55px';
+                        } else {
+                            // optPanel.style.bottom = '-0px';
+                            optPanel.style.overflow = "visible"
+                            // var HistoryCountSpan=_.query(".HistoryCountSpan")
+                            // HistoryCountSpan.innerText = numb
+                        }
+                    }
+                }
+            })
+            if (label) {
+                return _.div([checkbox, label], {
+                    class: "input-group"
+                });
+            } else {
+                return checkbox
+            }
+        },
+        select: function (arr, callback) {
+            var ops = arr.map(function (t) {
+                return _.createEle("option", t.label, {
+                    value: t.value || t.label || ""
+                })
+            })
+            return _.createEle("select", ops, {
+                class: "select"
+            }, {
+                change: function (e) {
+                    console.log(this.value)
+                    // console.log(e.target)
+                    callback && callback(this.value)
+                }
+            })
+        },
         input: function (text, props) {
             return _.createEle("input", "",
                 _.extend({
@@ -405,6 +487,70 @@ _package("_", this, function () {
                     type: "text",
                 }, props)
             )
+        },
+        rangeInput: function (options) {
+            var label = _.div(options.label || "")
+            var from = _.input("", _.extend({
+                name: "from"
+            }, options.from));
+            var to = _.input("", _.extend({
+                name: "to"
+            }, options.to))
+
+            _.addEvent("keydown", document, function (e) {
+                var keyCode = 0,
+                    e = e || event;
+                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+                var el = e.target;
+                var range = _.closest(el, ".range");
+                if (keyCode == 13 && range && _.get(el, "name") === "from") {
+                    to.focus()
+                }
+            })
+            return _.div([label, from, to], {
+                class: "range"
+            })
+        },
+        listInput: function (options) {
+            var label = _.div(options.label || "")
+            var size = options.size || 1;
+            var ipts = []
+            var _item = function (i) {
+                return _.input("", {
+                    class: "item",
+                    name: "item",
+                    id: "item_" + i
+                })
+            }
+            for (var i = 0; i < size; i++) {
+                ipts.push(_item(i))
+            }
+            //回车，焦点移动到下一个
+
+            _.addEvent("keydown", document, function (e) {
+                var keyCode = 0,
+                    e = e || event;
+                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+                var el = e.target;
+                var list = _.closest(el, ".list"); // el.parentNode
+                if (keyCode == 13 && list && el.tagName.toLowerCase() === "input") {
+                    var id = Number(el.id.split("_")[1]) + 1
+                    var next = _.query("#item_" + id)
+                    if (!next) {
+                        // next
+                        next = _item(id)
+                        // list.appendChild(next)
+                        _.append(list, next)
+                    }
+                    next.focus()
+
+                    // _.get(el,"")
+                    // to.focus()
+                }
+            })
+            return _.div([label].concat(ipts), {
+                class: "list"
+            })
         },
         //遍历dom，操作
         traversalWidth: function (el) {
@@ -1146,7 +1292,8 @@ _package("grid", _, function () {
             _this.rs.sort(_.sortBy(prop, seq === "asc", typ))
             var tbody = _this._tbody();
             var oldTbody = _.query("tbody", _this.grid)
-            oldTbody.parentNode.replaceChild(tbody, oldTbody)
+            // oldTbody.parentNode.replaceChild(tbody, oldTbody)
+            _.replace(oldTbody,tbody)
         },
         _optPanel: function () {
             var _this = this;
@@ -3202,6 +3349,31 @@ _package("unicode", _, function () {
                 hex += '%' + ('00' + str.charCodeAt(i).toString(16).toUpperCase()).slice(-4)
             }
             return hex;
+        }
+    })
+})
+
+_package("storage", _, function () {
+    // window.localStorage
+    function Storage(options) {
+        if (!(this instanceof Storage)) return new Storage(options);
+    }
+    return _.createClass(Storage, {}, {
+        get: function (key) {
+            return  JSON.parse(window.localStorage.getItem(key))
+        },
+        set: function (key, val) {
+            if (["boject", "array"].indexOf(_.type(val)) >= 0) {
+                window.localStorage.setItem(key, JSON.stringify(val))
+            } else {
+                window.localStorage.setItem(key, val)
+            }
+        },
+        remove: function (key) {
+            window.localStorage.removeItem(key);
+        },
+        clear: function () {
+            window.localStorage.clear();
         }
     })
 })

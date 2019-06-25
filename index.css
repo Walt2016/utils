@@ -212,8 +212,8 @@ a {
     font-size: 12px;
     background: #3F3F3F;
     text-align: center;
-    /* border: 1px solid #dedede; */
-    /* outlin: 1px solid #000; */
+    border: 1px solid #dedede;
+    /* outline: 1px solid #000; */
     cursor: pointer;
 
     color: #fff;
