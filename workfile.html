@@ -4,12 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- <meta http-equiv="X-UA-Compatible" content="ie=edge"> -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /> 
     <title>Document</title>
     <link rel="stylesheet" href="index.css">
     <style>
         .hide {
             display: none
+        }
+        .list  div.item{
+            width: 50px;
+            border: 1px solid #ccc;
+        }
+        .list  div.item[contenteditable]{
+            border: 1px solid #ccc;
+            width: 50px;
         }
     </style>
 </head>
@@ -59,20 +68,20 @@
             label: "Acceptance No",
             inputs: [{
                     label: "include list",
-                    type: "list",
+                    type: "includelist",
                     size: 2
                 },
                 {
                     label: "include range",
-                    type: "range"
+                    type: "includerange"
                 }, {
                     label: "omit list",
-                    type: "list",
+                    type: "omitlist",
                     size: 2
                 },
                 {
                     label: "omit range",
-                    type: "range"
+                    type: "omitrange"
                 },
 
             ]
@@ -97,7 +106,7 @@
 
         var _select = function () {
             var workfile = _.storage.get("workfile") || subject;
-            var select = _.select([""].concat(workfile.map(function (t, i) {
+            var select = _.select([""].concat(_.map(workfile,function (t, i) {
                 return {
                     value: t.filters,
                     label: t.label
@@ -126,14 +135,14 @@
 
         var select = _select();
 
-        var ul = _.ul(filterBlocks.map(function (t) {
+        var ul = _.ul(_.map(filterBlocks,function (t) {
             return _.li(_.checkbox({
                 label: t.label,
                 id: "checkobx_" + t.id,
                 blockId: t.id
             }))
         }), {
-            class: "namelist"
+            "class": "namelist"
         }, {
             click: function (e) {
                 var el = e.target;
@@ -168,28 +177,41 @@
         _.append(".nav", [select, ul, tbn])
         var _block = function (block) {
             var title = _.div(block.label, {
-                class: "title"
+                "class": "title"
             })
             var blockItems = [title]
+            var blockId = "b" + block.id;
+            var inputs = block.inputs;
 
-            block.inputs.forEach(function (t) {
+            inputs.forEach(function (t, i) {
+
+                var type = t.type;
+                var label = t.label || type
+                var size = t.size || 1;
+                var _id = function (i) {
+                    return [blockId, type, i].join("_")
+                }
+
                 switch (t.type) {
-                    case "range":
+                    case "range": case "includerange": case "omitrange":
                         var range = _.rangeInput({
-                            label: t.label || "range",
+                            label: label,
                             from: {
-                                placeholder: "from"
+                                placeholder: "from",
+                                id: _id(i)
                             },
                             to: {
-                                placeholder: "to"
+                                placeholder: "to",
+                                id: _id(i + 1)
                             }
                         })
                         blockItems.push(range)
                         break;
-                    case "list":
+                    case "list": case "includelist": case "omitlist":
                         var list = _.listInput({
-                            label: t.label || "list",
-                            size: t.size || 1
+                            label: label,
+                            size: size,
+                            id: _id(i)
                         })
                         blockItems.push(list)
                         break;
@@ -198,8 +220,9 @@
 
 
             var wrap = _.div(blockItems, {
-                class: "block",
-                blockid: block.id
+                "class": "block",
+                // blockid: block.id,
+                id: blockId
             })
 
             _.append(".blockList", wrap)
@@ -255,7 +278,7 @@
             })
 
             var btn2 = _.btn("保存workfile", {
-                class: "btn"
+                "class": "btn"
             }, {
                 click: function () {
                     var dialog = _.query("#dialog")
@@ -283,7 +306,6 @@
 
                 _.replace(select, _select())
 
-                // name
             } else {
 
                 _.storage.set("workfile", subject)

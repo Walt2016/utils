@@ -30,7 +30,10 @@ _package("_", this, function () {
                             configurable: true,
                             writable: true
                         }
-                        Object.defineProperty(target, key, descriptor);
+                        //defineProperty在IE8下只能对DOM对象使用
+                        // Object.defineProperty(target, key, descriptor);
+                        //ie8
+                        target[key] = props[key]
                     }
                 }
             }
@@ -41,8 +44,11 @@ _package("_", this, function () {
             };
         }(),
         //类型
+        //ie8中  Object.prototype.toString.call(undefined) =[boject object]
+        //其他 Object.prototype.toString.call(undefined) =[boject undefined]
         type: function (o) {
             if (o === null) return 'null';
+            if (o === undefined) return "undefined"; //兼容ie8
             var s = Object.prototype.toString.call(o);
             var t = s.match(/\[object (.*?)\]/)[1].toLowerCase();
             return t === 'number' ? isNaN(o) ? 'nan' : !isFinite(o) ? 'infinity' : t : t;
@@ -90,7 +96,7 @@ _package("_", this, function () {
             }); //listener
         },
         closest: function (el, cls) {
-            if (!el.parentNode) { //document
+            if (!el.parentNode) { //document  ie8不支持parentNode
                 return null
             } else if (cls.indexOf(".") === 0 && el.className.indexOf(cls.substring(1)) >= 0) {
                 return el;
@@ -192,7 +198,7 @@ _package("_", this, function () {
                 }
             }
             var _createTextNode = function (t) {
-                if (["string", "number", "date"].indexOf(_.type(t)) >= 0) {
+                if (_.indexOf(["string", "number", "date"],_.type(t)) >= 0) {
                     t = document.createTextNode(t)
                 }
                 return t
@@ -207,7 +213,7 @@ _package("_", this, function () {
 
             _append(el, child)
         },
-        replace:function(ele,newEle){
+        replace: function (ele, newEle) {
             ele.parentNode.replaceChild(newEle, ele)
         },
         empty: function (el) {
@@ -217,6 +223,10 @@ _package("_", this, function () {
             el.innerText = "";
         },
         get: function (el, prop) {
+            if (prop === "class") {
+                //IE8不兼容通过class名获取元素
+                return el.className
+            }
             if (el.tagName === "input" && prop === "value") {
                 return el[prop]
             }
@@ -225,8 +235,13 @@ _package("_", this, function () {
             }
             return el.getAttribute(prop)
         },
+        //IE6/7不支持setAttribute('class',xxx)方式设置元素的class。 
         set: function (el, key, val) {
-            el.setAttribute(key, val)
+            if (key === "class") {
+                el.className = val
+            } else {
+                el.setAttribute(key, val)
+            }
             // var tag = el.tagName;
             // var _set = function (key, val) {
             //     if (tag.toLowerCase() === "input" && key === "checked") {
@@ -238,6 +253,26 @@ _package("_", this, function () {
             //     }
             // }
             // _set(key, val)
+        },
+        //兼容ie8 不支持str.trim()
+        trim: function (str) {
+            return str.replace(/(^\s*)|(\s*$)/g, "");
+        },
+        //兼容ie8
+        map: function (arr, callback) {
+            var arr2 = []
+            for (var i = 0; i < arr.length; i++) {
+                arr2 = callback(arr[i])
+            }
+            return arr2;
+        },
+        //兼容ie8
+        indexOf: function (arr, val) {
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] == val) {
+                    return i
+                }
+            }
         },
         start: function (tag, options) {
             var sb = [];
@@ -262,6 +297,8 @@ _package("_", this, function () {
             return text === null ? _.start(tag, options) : _.start(tag, options) + text + _.end(tag);
         },
         //创建DOm 方式
+        //ie 8中
+        // var a={"class":1}错误（缺少标识符、字符串或数字） var a={"class":1}正确
         createEle: function (tag, text, props, events) {
             var _createEle = function (tag, text) {
                 var ele = document.createElement(tag)
@@ -272,11 +309,17 @@ _package("_", this, function () {
                     case "string":
                     case "number":
                     case "date":
-                        ele.appendChild(document.createTextNode(text));
+                        if (ele.tagName === "INPUT") { //兼容ie8
+                            console.log(ele)
+
+                        } else {
+                            ele.appendChild(document.createTextNode(text));
+                        }
+
                         // _.append(ele,text)
                         break;
                     case "array":
-                        text.forEach(function (t) {
+                        _.forEach(text, function (t) {
                             _appendChild(ele, t)
                         })
                         break;
@@ -316,7 +359,7 @@ _package("_", this, function () {
             //     var leftTag = tag.substring(0, i)
             //     return _.createEle(leftTag, _.createEle(tag.substring(i + 1), text, props, events))
             // }
-            var tags = tag.trim().split(" ");
+            var tags = _.trim(tag).split(" ");
             //自动补齐层级关系
             // var _autoFixTag = function (tags, child) {
             //     switch (_.type(child)) {
@@ -385,19 +428,20 @@ _package("_", this, function () {
             return ele;
         },
         btn: function (text, props, events) {
-            if (props && props.class) {
-                props.class = "btn " + props.class
+            //ie8 props.class缺少标识符
+            if (props && props["class"]) {
+                props["class"] = "btn " + props["class"];
             }
             return _.div(text, _.extend({
-                class: "btn"
+                "class": "btn"
             }, props), events)
         },
         btnGroup: function (text, props, events) {
-            if (props && props.class) {
-                props.class = "btn-group " + props.class
+            if (props && props["class"]) {
+                props["class"] = "btn-group " + props["class"]
             }
             return _.div(text, _.extend({
-                class: "btn-group"
+                "class": "btn-group"
             }, props), events)
         },
         stringify: function (el) {
@@ -431,12 +475,12 @@ _package("_", this, function () {
             var label;
             if (options && options.label) {
                 label = _.div(options.label, {
-                    class: "label"
+                    "class": "label"
                 })
             }
             var checkbox = _.createEle("input", "", _.extend({
                 type: "checkbox",
-                class: "checkbox"
+                "class": "checkbox"
             }, options), {
                 click: function (e) {
                     var el = e.target,
@@ -458,20 +502,20 @@ _package("_", this, function () {
             })
             if (label) {
                 return _.div([checkbox, label], {
-                    class: "input-group"
+                    "class": "input-group"
                 });
             } else {
                 return checkbox
             }
         },
         select: function (arr, callback) {
-            var ops = arr.map(function (t) {
+            var ops = _.map(arr, function (t) {
                 return _.createEle("option", t.label, {
                     value: t.value || t.label || ""
                 })
             })
             return _.createEle("select", ops, {
-                class: "select"
+                "class": "select"
             }, {
                 change: function (e) {
                     console.log(this.value)
@@ -508,48 +552,60 @@ _package("_", this, function () {
                 }
             })
             return _.div([label, from, to], {
-                class: "range"
+                "class": "range"
             })
         },
         listInput: function (options) {
             var label = _.div(options.label || "")
             var size = options.size || 1;
             var ipts = []
-            var _item = function (i) {
-                return _.input("", {
-                    class: "item",
-                    name: "item",
-                    id: "item_" + i
+            var id = options.id || "list_1";
+            var _id = function (i) {
+                return id.replace(/(\w+)([\?|\d])/, function (a, p, n) {
+                    return p + i;
+                })
+            }
+            var _nextId = function (id) {
+                return id.replace(/(\w+)([\?|\d])/, function (a, p, n) {
+                    return n === "?" ? (p + 1) : p + (Number(n) + 1)
+                })
+            }
+            var _item = function (id) {
+                // return _.input("", {
+                //     "class": "item",
+                //     name: "item",
+                //     id: id
+                // })
+
+                return _.div("", {
+                    id: id,
+                    contenteditable: true,
+                    "class": "item"
                 })
             }
             for (var i = 0; i < size; i++) {
-                ipts.push(_item(i))
+                ipts.push(_item(_id(i)))
             }
             //回车，焦点移动到下一个
-
             _.addEvent("keydown", document, function (e) {
                 var keyCode = 0,
                     e = e || event;
                 keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
                 var el = e.target;
+                var id = el.id
                 var list = _.closest(el, ".list"); // el.parentNode
                 if (keyCode == 13 && list && el.tagName.toLowerCase() === "input") {
-                    var id = Number(el.id.split("_")[1]) + 1
-                    var next = _.query("#item_" + id)
+                    var nextId = _nextId(id) //_id(1)
+                    var next = _.query("#" + nextId)
                     if (!next) {
-                        // next
-                        next = _item(id)
-                        // list.appendChild(next)
+                        next = _item(nextId)
                         _.append(list, next)
                     }
                     next.focus()
-
-                    // _.get(el,"")
-                    // to.focus()
                 }
             })
             return _.div([label].concat(ipts), {
-                class: "list"
+                "class": "list"
             })
         },
         //遍历dom，操作
@@ -623,7 +679,8 @@ _package("_", this, function () {
             }
         }
     };
-    ["div", "ul", "li", "tbody", "tfoot", "thead", "td", "tr", "th", "table", "textarea", "i", "span", "colgroup", "col", "a"].forEach(function (t) {
+    //ie8 对象不支持forEach
+    _.forEach(["div", "ul", "li", "tbody", "tfoot", "thead", "td", "tr", "th", "table", "textarea", "i", "span", "colgroup", "col", "a"], function (t) {
         _[t] = function (text, props, events) {
             return _.createEle(t, text, props, events)
         }
@@ -938,11 +995,11 @@ _package("nav", _, function () {
                 var lis = children.map(function (t) {
                     if (t.hide) return null;
                     return _.div(genLink(t), {
-                        class: cls["2"]
+                        "class": cls["2"]
                     })
                 })
                 lineCenter = _.div(lis, {
-                    class: cls["1"]
+                    "class": cls["1"]
                 })
             }
 
@@ -950,7 +1007,7 @@ _package("nav", _, function () {
             var active = checkActive(t) ? " active" : "";
 
             return _.div([genLink(t)].concat(lineCenter), {
-                class: cls["0"] + active,
+                "class": cls["0"] + active,
                 tabindex: "-1"
             }, {
                 click: function (e) {
@@ -962,17 +1019,17 @@ _package("nav", _, function () {
             })
         })
         var logo = _.div(_.img(logo), {
-            class: "nav-small",
+            "class": "nav-small",
             style: _.inStyle(logo),
             tabindex: "-1"
         })
 
         var info = _.div(info.text, {
-            class: "index-nav-info"
+            "class": "index-nav-info"
         })
 
         var navIndex = _.div([logo].concat(lines).concat([info]), {
-            class: "index-nav"
+            "class": "index-nav"
         })
         el.appendChild(navIndex)
     }
@@ -1076,15 +1133,15 @@ _package("grid", _, function () {
                         _.div(_.table([cols, thead], {
                             tablename: tname
                         }), {
-                            class: "table-fixed-head"
+                            "class": "table-fixed-head"
                         }),
                         _.div(_.table([cols.cloneNode(true), tbody, tfoot], {
                             tablename: tname
                         }), {
-                            class: "table-fixed-body"
+                            "class": "table-fixed-body"
                         })
                     ], {
-                        class: "dataintable",
+                        "class": "dataintable",
                         tablename: tname
                     })
                     break;
@@ -1092,7 +1149,7 @@ _package("grid", _, function () {
                     return _.div([_.table([colgroup, thead, tbody, tfoot], {
                         tablename: tname
                     }), optPanel], {
-                        class: "dataintable",
+                        "class": "dataintable",
                         tablename: tname
                     }, {
                         click: function (e) {
@@ -1162,13 +1219,13 @@ _package("grid", _, function () {
                         break;
                     case "date":
                         t = [_.createEle("i", "", {
-                            class: "date"
+                            "class": "date"
                         }), fmt ? _time(val).format(fmt) : val]
 
                         break;
                 }
                 return _.td(val, {
-                    class: typ,
+                    "class": typ,
                     prop: prop
                 });
             });
@@ -1207,11 +1264,11 @@ _package("grid", _, function () {
                         props.push(prop)
                     }
                     return hide ? "" : _.th([_.div(lable, {
-                        class: "text"
+                        "class": "text"
                     }), _.div("", {
-                        class: "icon"
+                        "class": "icon"
                     })], {
-                        class: typ,
+                        "class": typ,
                         prop: prop,
                         seq: seq
                     }, {
@@ -1223,7 +1280,7 @@ _package("grid", _, function () {
 
             if (config.seq) thead.unshift(_.th("#"));
             if (config.check) thead.unshift(_.th(_.checkbox(), {
-                class: "selectAll"
+                "class": "selectAll"
             }, {
                 click: function (e) {
                     _this.selectAll(e.target)
@@ -1264,7 +1321,7 @@ _package("grid", _, function () {
 
             this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
                 return _.td(t, {
-                    class: t === "" ? "string" : "number",
+                    "class": t === "" ? "string" : "number",
                     prop: i >= offset ? props[i - offset] : ""
                 });
             }) : "";
@@ -1293,7 +1350,7 @@ _package("grid", _, function () {
             var tbody = _this._tbody();
             var oldTbody = _.query("tbody", _this.grid)
             // oldTbody.parentNode.replaceChild(tbody, oldTbody)
-            _.replace(oldTbody,tbody)
+            _.replace(oldTbody, tbody)
         },
         _optPanel: function () {
             var _this = this;
@@ -1331,7 +1388,7 @@ _package("grid", _, function () {
                     optPanel.style.overflow = "hidden"
                 }
             })], {
-                class: "optPanel"
+                "class": "optPanel"
             })
             return optPanel
         },
@@ -1778,7 +1835,7 @@ _package("websql", _, function () {
             return _.wrap("ul", tbls.map(function (t) {
                 return _.wrap("li", _.wrap("i", "") +
                     _.wrap("div", t, {
-                        class: "text"
+                        "class": "text"
                     })
                 )
             }).join(""))
@@ -1794,7 +1851,7 @@ _package("websql", _, function () {
             return _.ul(tbls.map(function (t) {
                 return _.li([_.i(""),
                     _.div(t, {
-                        class: "text"
+                        "class": "text"
                     })
                 ])
             }))
@@ -1802,7 +1859,7 @@ _package("websql", _, function () {
         createSlide: function () {
             var _this = this;
             var hd = _.div(this.createHd(), {
-                class: "hd"
+                "class": "hd"
             }, {
                 click: function (e) {
                     var el = e.target;
@@ -1830,13 +1887,13 @@ _package("websql", _, function () {
                 }
             })
             var bd = _.div("", {
-                class: "bd"
+                "class": "bd"
             })
             var container = _.div([hd, bd], {
-                class: "slide_container"
+                "class": "slide_container"
             })
             return _.div(container, {
-                class: "slide"
+                "class": "slide"
             })
         },
         createBtns: function () {
@@ -1860,12 +1917,12 @@ _package("websql", _, function () {
                 val: "日志"
             }].map(function (t) {
                 return _.btn(t.val, {
-                    class: t.key
+                    "class": t.key
                 })
             })
             var _this = this;
             var btnGroup = _.div(btns, {
-                class: "btn-group"
+                "class": "btn-group"
             }, {
                 click: function (e) {
                     var act = e.target.className.split(" ")[1]
@@ -1965,7 +2022,7 @@ _package("websql", _, function () {
             var reg1 = new RegExp("(" + keys.join("|") + ")", "gi");
             return sql.replace(reg1, function (t) {
                 return _.wrap("font", (t.toUpperCase()).replace(/\s+/, " "), {
-                    class: "red"
+                    "class": "red"
                 })
             }).replace(/;\s*/g, ";<br>")
         },
@@ -2010,7 +2067,7 @@ _package("websql", _, function () {
             var arr = _.obj2arr(rs[0]),
                 keys = arr.keys,
                 typs = arr.typs;
-            var tbl = this.tbls[tname.trim()] || [];
+            var tbl = this.tbls[_.trim(tname)] || [];
             return keys.map(function (t, i) {
                 var fld = tbl.filter(function (f) {
                     return f.prop === t
@@ -2055,12 +2112,12 @@ _package("websql", _, function () {
                                 break;
                             case "date":
                                 t = _.wrap("i", "", {
-                                    class: "date"
+                                    "class": "date"
                                 }) + t
                                 break;
                         }
                         return _.wrap("td", t, {
-                            class: typs[j]
+                            "class": typs[j]
                         });
                     }).join("");
                 return _.wrap("tr", cell, {
@@ -2083,11 +2140,11 @@ _package("websql", _, function () {
                     var lable = t.label ? t.label : t;
                     var prop = t.prop ? t.prop : t;
                     lable += _.wrap("div", "", {
-                        class: "icon"
+                        "class": "icon"
                     })
                     typs.push(typ);
                     return _.wrap("th", lable, {
-                        class: typ,
+                        "class": typ,
                         prop: prop
                     });
                 }).join("");
@@ -2105,14 +2162,14 @@ _package("websql", _, function () {
 
             tfoot = tfoot.map(function (t) {
                 return _.wrap("td", t, {
-                    class: "number"
+                    "class": "number"
                 });
             }).join("");
             return _.wrap("table",
                 _.wrap("thead", thead) +
                 _.wrap("tbody", tbody) +
                 _.wrap("tfoot", tfoot), {
-                    class: "dataintable",
+                    "class": "dataintable",
                     tablename: tname
                 });
         },
@@ -2189,7 +2246,7 @@ _package("websql", _, function () {
             var _this = this;
             var textarea = _.div("", {
                 contentEditable: "plaintext-only",
-                class: "textarea",
+                "class": "textarea",
                 // placeholder:"这里输入sql"
             }, {
                 blur: function (e) { //sql语法高亮
@@ -2199,7 +2256,7 @@ _package("websql", _, function () {
             })
 
             var btn = _.btn("执行sql", {
-                class: "exesql"
+                "class": "exesql"
             }, {
                 click: function (e) {
                     var bd = document.querySelector(".slide .bd")
@@ -2243,7 +2300,7 @@ _package("websql", _, function () {
                                 tbl: ""
                             }, function () {
                                 bd.appendChild(_.div(t + ";", {
-                                    class: "sql"
+                                    "class": "sql"
                                 }))
                             }, function (errormsg) {
                                 bd.appendChild(document.createTextNode(errormsg))
@@ -2258,10 +2315,10 @@ _package("websql", _, function () {
                 return _.checkbox(t)
             })
             var btnGroup = _.div([btn].concat(checkboxs), {
-                class: "sqlcmd-btn-group"
+                "class": "sqlcmd-btn-group"
             })
             return _.div([textarea, btnGroup], {
-                class: "sqlcmd"
+                "class": "sqlcmd"
             })
         },
         getGridConfig: function () {
@@ -3336,7 +3393,7 @@ _package("url", _, function () {
 //unicode 统一码 0 - 65535 之间的整数
 _package("unicode", _, function () {
     function Unicode() {}
-    return _.createClass(URL, {}, {
+    return _.createClass(Unicode, {}, {
         decode: function (str) {
             return str.split("%").map(function (t) {
                 return String.fromCharCode("0x" + t)
@@ -3353,27 +3410,240 @@ _package("unicode", _, function () {
     })
 })
 
+
 _package("storage", _, function () {
-    // window.localStorage
+    var localStorage = window.localStorage;
+    if (!window.localStorage) {
+        //使用cookie方式代替
+        //cookie 因为每次http请求都会携带, 能精简则精简 总大小不能超过4kb
+
+        var cookie = {
+            set: function (cname, cvalue, exdays) {
+                exdays = exdays || 365;
+                var d = new Date();
+                d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+                var expires = "expires=" + d.toGMTString();
+                document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+            },
+
+            remove: function (cname) {
+                this.set(cname, "", -1)
+            },
+
+            clear: function () {
+                var arr = document.cookie.split(';')
+                for (var i = 0; i < arr.length; i++) {
+                    this.set(array[i], "", -1)
+                }
+            },
+            get: function (cname) {
+                var name = cname + "=";
+                var ca = document.cookie.split(';');
+                for (var i = 0; i < ca.length; i++) {
+                    var c = _.trim(ca[i]);
+                    if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
+                }
+                return "";
+            }
+
+        }
+
+
+
+
+        //IE中使用 userData 代替localStorage
+        //IE8开始支持localStorage ,但必须在服务器环境才有效
+        //扩展window对象，模拟原生localStorage输入输出
+        var userData = {
+            userData: null,
+            //存储文件名（单文件小于128k，足够普通情况下使用了）
+            file: window.location.hostname || "localStorage",
+            //key'cache
+            keyCache: "localStorageKeyCache",
+            init: function () {
+                if (!this.userData) {
+                    try {
+                        var hideInput = _.input("", {
+                            name: "localStorage",
+                            type: "hide"
+                        })
+                        hideInput.addBehavior("#default#userData");
+                        this.userData = hideInput;
+                        _.append(document.body, hideInput)
+                    } catch (e) {
+                        console.log(e)
+                        return false
+                    }
+                }
+                return true;
+            },
+            item: function (key, value) {
+                if (this.init()) {
+                    var o = this.userData;
+                    if (value !== undefined) { //写或者删
+                        //保存key以便遍历和清除
+                        // this.cacheKey(key, value === null ? 2 : 1);
+                        //load
+                        o.load(this.file);
+                        //保存数据
+                        value === null ? o.removeAttribute(key) : o.setAttribute(key, value + "");
+                        // 存储
+                        o.save(this.file);
+                    } else { //读
+                        o.load(this.file);
+                        return o.getAttribute(key) || null;
+                    }
+                    return value;
+                }
+            }
+        }
+        localStorage = {
+            setItem: function (key, value) {
+                cookie.set(key, value)
+                // userData.item(key, value);
+
+                // this.length = userData.cacheKey(0, 4)
+            },
+            getItem: function (key) {
+                return cookie.get(key)
+                // return userData.item(key)
+            },
+            removeItem: function (key) {
+                cookie.remove(key)
+                // userData.item(key, null);
+                // this.length = userData.cacheKey(0, 4)
+            },
+            clear: function () {
+                cookie.clear();
+                // userData.clear();
+                // this.length = userData.cacheKey(0, 4)
+            },
+            length: 0,
+            key: function (i) {
+                // return userData.cacheKey(0, 3)[i];
+            },
+            isVirtualObject: true
+        };
+    }
+
+    console.log(localStorage)
+
+
+    // define(function(){
+    //     if('localStorage' in window) return;
+    //     function Storage(){
+    //         this.box = document.body || document.getElementByTagName('head')[0] || document.documentElement;
+    //         this.name = 'localStorage'
+    //         this.data = document.createElement(this.name);
+    //         this.data.addBehavior("#default#userData");
+    //         this.box.appendChild(this.data);
+    //         this.map = [];
+    //         this.length = this.length();
+    //     }
+    //     Storage.prototype.setItem = function(name,val){
+    //         if(name=='localStorage-map'){
+    //             throw new Error("this is localStorage in key [localStorage-map] not use!")
+    //             return ;
+    //         }
+    //         if(this.map.length==0){
+    //             this.data.load('localStorage-map');
+    //             var data = this.data.getAttribute('localStorage-map');
+    //             if(data!=null){
+    //                 this.map = data.split(',');
+    //             }
+    //         }
+    //         var flag = true;
+    //         for(var i in this.map){
+    //             if(this.map[i] == name){
+    //                 flag = false;
+    //             }
+    //         }
+    //         if(flag){
+    //             this.map.push(name)
+    //         }
+    //         this.data.setAttribute(name,val);
+    //         var date = new Date();
+    //         date.setDate(date.getDate()+700);
+    //         this.data.expires = date.toUTCString();
+    //         this.data.save(name);
+    //         this.data.setAttribute('localStorage-map',this.map);
+    //         this.data.save('localStorage-map');
+    //     }
+    //     Storage.prototype.getItem = function(name){
+    //         if(name == 'localStorage-map'){
+    //             throw new Error("this is localStorage in key [localStorage-map] not use!");
+    //             return;
+    //         }
+    //         this.data.load(name);
+    //         return this.data.getAttribute(name);
+    //     };
+    //     Storage.prototype.length = function(){
+    //         if(this.map.length==0){
+    //             this.data.load('localStorage-map');
+    //             var data = this.data.getAttribute('localStorage-map');
+    //             if(data!=null){
+    //                 this.map = data.split(',');
+    //             }
+    //         }
+    //         for (var i = this.map.length - 1; i >= 0; i--) {
+    //             alert(this.getItem(this.map[i]))
+    //             if(this.getItem(this.map[i])==undefined || this.getItem(this.map[i])==""){
+    //                 this.map.splice(i,1);
+    //             }
+    //         }
+    //         return this.map.length;
+    //     };
+    //     Storage.prototype.removeItem = function(name){
+    //         if(typeof name=="undefined" || name=="") return;
+    //         if(this.map.length==0){
+    //             if(this.getItem('localStorage-map')!=null){
+    //                 this.map = this.getItem('localStorage-map').split(',');
+    //             }
+    //         }
+    //         for(var i in this.map){
+    //             if(this.map[i] == name){
+    //                 this.map.splice(i,1);
+    //             }
+    //         }
+    //         this.data.load(name);
+    //         this.data.setAttribute(name,undefined);
+    //         this.data.save(name);
+    //         return true;
+    //     },
+    //     Storage.prototype.clear=function(){
+    //         if(this.map.length==0){
+    //             if(this.getItem('localStorage-map')!=null){
+    //                 this.map = this.getItem('localStorage-map').split(',');
+    //             }
+    //         }
+    //         for(var i in this.map){
+    //             this.removeItem(this.map[i]);
+    //         }
+    //     }
+    //     window.localStorage = new Storage();
+    // });
+
+
     function Storage(options) {
         if (!(this instanceof Storage)) return new Storage(options);
     }
     return _.createClass(Storage, {}, {
         get: function (key) {
-            return  JSON.parse(window.localStorage.getItem(key))
+            var val = localStorage.getItem(key)
+            return val ? JSON.parse(val) : ""
         },
         set: function (key, val) {
             if (["boject", "array"].indexOf(_.type(val)) >= 0) {
-                window.localStorage.setItem(key, JSON.stringify(val))
+                localStorage.setItem(key, JSON.stringify(val))
             } else {
-                window.localStorage.setItem(key, val)
+                localStorage.setItem(key, val)
             }
         },
         remove: function (key) {
-            window.localStorage.removeItem(key);
+            localStorage.removeItem(key);
         },
         clear: function () {
-            window.localStorage.clear();
+            localStorage.clear();
         }
     })
 })
