@@ -244,7 +244,7 @@ _package("_", this, function () {
             if (key === "class") {
                 el.className = val
             } else {
-                el.setAttribute(key, val)
+                el.setAttribute(key, val || "")
             }
             // var tag = el.tagName;
             // var _set = function (key, val) {
@@ -259,10 +259,19 @@ _package("_", this, function () {
             // _set(key, val)
         },
         remove: function (el, prop) {
-            if (prop) {
-                el.removeAttribute(prop)
+            var _remove = function (el, prop) {
+                if (prop) {
+                    el.removeAttribute(prop)
+                } else {
+                    el.parentNode.removeChild(el)
+                }
+            }
+            if (_.type(el) === "nodelist") {
+                _.forEach(el, function (t) {
+                    _remove(t, prop)
+                })
             } else {
-                el.parentNode.removeChild(el)
+                _remove(el, prop)
             }
         },
         //兼容IE ，替换(Array like) nodeList.forEach
@@ -390,6 +399,9 @@ _package("_", this, function () {
                     switch (key) {
                         case "enter": //回车
                             _shortcut(ele, 13, events[key])
+                            break;
+                        case "leftArrow": //左箭头
+                            _shortcut(ele, 37, events[key])
                             break;
                         default:
                             _.addEvent(key, ele, events[key]);
@@ -656,9 +668,9 @@ _package("_", this, function () {
             var size = options.size || 1;
             var ipts = []
             var cssname = "listInput";
-            var cssname_group="listInput_group"
+            var cssname_group = "listInput_group"
             var cssname_item = "listInput_item";
-            
+
             var id = options.id || "list_1";
             var type = options.type || "contenteditable";
 
@@ -682,8 +694,7 @@ _package("_", this, function () {
                         click: function () {
                             // var list = _.closest(el, "." + cssname);
                             _.remove(el)
-
-                            if (_.queryAll("." + cssname_item,inputGroup).length == 0) {
+                            if (_.queryAll("." + cssname_item, inputGroup).length == 0) {
                                 // _.append(list, _item(_id(0)))
                                 _.append(inputGroup, _item(_id(0)))
                             }
@@ -715,13 +726,14 @@ _package("_", this, function () {
             for (var i = 0; i < size; i++) {
                 ipts.push(_item(_id(i)))
             }
+            var inputGroup = _.div(ipts, {
+                "class": cssname_group
+            })
             //回车事件
             var _enter = function (e) {
                 e.preventDefault();
                 var el = e.target;
                 var id = el.id
-
-
                 var nextId = _nextId(id) //_id(1)
                 var next = _.query("#" + nextId)
                 if (!next) { //创建新输入框
@@ -731,15 +743,33 @@ _package("_", this, function () {
                     _.append(inputGroup, next)
                 }
                 next.focus()
-            }
-            var inputGroup=_.div(ipts,{
-                "class":cssname_group
-            })
 
-            return _.div([label,inputGroup], {  //[label].concat(ipts)
+                //set active
+                var els = _.queryAll("." + cssname_item, inputGroup)
+                _.remove(els, "active");
+                _.set(next, "active");
+            }
+
+            //点击事件
+            var handleActive = function (e) {
+                var el = e.target;
+                if (el.className === cssname_item) {
+                    var els = _.queryAll("." + cssname_item, inputGroup)
+                    _.remove(els, "active");
+                    _.set(el, "active");
+                }
+            }
+            //左箭头 快捷键
+            var _leftArrow=function(e){
+                console.log(e)
+
+            }
+            return _.div([label, inputGroup], { //[label].concat(ipts)
                 "class": cssname
             }, {
-                enter: _enter
+                enter: _enter,
+                leftArrow:_leftArrow,
+                click: handleActive
             })
         },
         //遍历dom，操作
