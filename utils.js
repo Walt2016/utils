@@ -95,17 +95,48 @@ _package("_", this, function () {
                 listener: listener
             }); //listener
         },
+        isDOM: function (obj) {
+            if (typeof HTMLElement === 'object') {
+                return obj instanceof HTMLElement;
+            }
+            return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
+        },
+        selectorType: function (cls) {
+            var type = "tag"
+            //    if(_.type(cls)==="string") {
+            switch (true) {
+                case /^\.\w+/.test(cls):
+                    type = "class"
+                    break;
+                case /^#\w+/.test(cls):
+                    type = "id"
+                    break;
+                case _.isDOM(cls):
+                    type = "dom"
+            }
+            return type;
+        },
         closest: function (el, cls) {
-            if (!el.parentNode) { //document  ie8不支持parentNode
-                return null
-            } else if (cls.indexOf(".") === 0 && el.className.indexOf(cls.substring(1)) >= 0) {
-                return el;
-            } else if (cls.indexOf("#") === 0 && el.id.toLowerCase() === cls.substring(1).toLowerCase()) {
-                return el;
-            } else if (el.tagName.toLowerCase() === cls.toLowerCase()) {
-                return el
-            } else {
-                return _.closest(el.parentNode, cls)
+            if (_.isDOM(cls)) {
+                if (!el.parentNode) {
+                    return null
+                } else if (el == cls) {
+                    return el;
+                } else {
+                    return _.closest(el.parentNode, cls)
+                }
+            } else { //string
+                if (!el.parentNode) { //document  ie8不支持parentNode
+                    return null
+                } else if (cls.indexOf(".") === 0 && _.indexOf(el.className.split(" "), cls.substring(1)) >= 0) {
+                    return el;
+                } else if (cls.indexOf("#") === 0 && el.id.toLowerCase() === cls.substring(1).toLowerCase()) {
+                    return el;
+                } else if (el.tagName.toLowerCase() === cls.toLowerCase()) {
+                    return el
+                } else {
+                    return _.closest(el.parentNode, cls)
+                }
             }
         },
         sortBy: function (key, asc, type) {
@@ -159,32 +190,6 @@ _package("_", this, function () {
             }
             return document.querySelector(selectors)
         },
-        fast: function () {
-            var len = arguments.length,
-                args = new Array(len), //fast then Array.prototype.slice.call(arguments)
-                times = 10000;
-            while (len--) args[len] = arguments[len];
-            var last = args[args.length - 1];
-            if (_.type(last) === "number") {
-                times = last;
-                args.pop();
-            }
-            var _run = function (fn, times) {
-                var word = 'run ' + fn.name + '{} ' + times + ' time' + (times > 1 ? 's' : '');
-                console.time(word);
-                while (times--) fn.apply(this, args);
-                console.timeEnd(word);
-            }
-            args.forEach(function (t) {
-                t && _run.call(this, t, times);
-            });
-        },
-        //兼容IE ，替换(Array like) nodeList.forEach
-        forEach: function (arr, callback) {
-            for (var i = 0; i < arr.length; i++) {
-                callback(arr[i])
-            }
-        },
         append: function (el, child) {
             var _append = function (el, child) {
                 if (_.type(child) === "array") {
@@ -198,7 +203,7 @@ _package("_", this, function () {
                 }
             }
             var _createTextNode = function (t) {
-                if (_.indexOf(["string", "number", "date"],_.type(t)) >= 0) {
+                if (_.indexOf(["string", "number", "date"], _.type(t)) >= 0) {
                     t = document.createTextNode(t)
                 }
                 return t
@@ -223,8 +228,7 @@ _package("_", this, function () {
             el.innerText = "";
         },
         get: function (el, prop) {
-            if (prop === "class") {
-                //IE8不兼容通过class名获取元素
+            if (prop === "class") { //IE8不能通过class名获取元素
                 return el.className
             }
             if (el.tagName === "input" && prop === "value") {
@@ -254,6 +258,19 @@ _package("_", this, function () {
             // }
             // _set(key, val)
         },
+        remove: function (el, prop) {
+            if(prop){
+                el.removeAttribute(prop)
+            }else{
+                el.parentNode.removeChild(el)
+            }
+        },
+        //兼容IE ，替换(Array like) nodeList.forEach
+        forEach: function (arr, callback) {
+            for (var i = 0; i < arr.length; i++) {
+                callback(arr[i])
+            }
+        },
         //兼容ie8 不支持str.trim()
         trim: function (str) {
             return str.replace(/(^\s*)|(\s*$)/g, "");
@@ -262,7 +279,7 @@ _package("_", this, function () {
         map: function (arr, callback) {
             var arr2 = []
             for (var i = 0; i < arr.length; i++) {
-                arr2 = callback(arr[i])
+                arr2[arr2.length] = callback(arr[i])
             }
             return arr2;
         },
@@ -273,6 +290,26 @@ _package("_", this, function () {
                     return i
                 }
             }
+        },
+        fast: function () {
+            var len = arguments.length,
+                args = new Array(len), //fast then Array.prototype.slice.call(arguments)
+                times = 10000;
+            while (len--) args[len] = arguments[len];
+            var last = args[args.length - 1];
+            if (_.type(last) === "number") {
+                times = last;
+                args.pop();
+            }
+            var _run = function (fn, times) {
+                var word = 'run ' + fn.name + '{} ' + times + ' time' + (times > 1 ? 's' : '');
+                console.time(word);
+                while (times--) fn.apply(this, args);
+                console.timeEnd(word);
+            }
+            args.forEach(function (t) {
+                t && _run.call(this, t, times);
+            });
         },
         start: function (tag, options) {
             var sb = [];
@@ -350,9 +387,28 @@ _package("_", this, function () {
             }
             var _appendEvents = function (ele, events) {
                 for (var key in events) {
-                    _.addEvent(key, ele, events[key]);
+                    switch (key) {
+                        case "enter": //回车
+                            _shortcut(ele, 13, events[key])
+                            break;
+                        default:
+                            _.addEvent(key, ele, events[key]);
+                    }
                 }
                 return ele;
+            }
+
+            //键盘快捷键
+            var _shortcut = function (ele, key, callback) {
+                _.addEvent("keydown", document, function (e) {
+                    var keyCode = 0,
+                        e = e || event;
+                    keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+                    var target = e.target;
+                    if (keyCode == key && _.closest(target, ele)) { //&& target == ele   _.closest(target, "." + ele.className)
+                        callback(e)
+                    }
+                })
             }
             // var i = tag.indexOf(" ");
             // if (i > 0) {
@@ -456,6 +512,13 @@ _package("_", this, function () {
             }).join(";")
             // return JSON.stringify(obj).replace(/\"/g,"").replace(/,/g,";").replace(/{/,"").replace(/}/,"")
         },
+        //小图标
+        icon: function (str, props, events) {
+            return _.div(str,
+                _.extend({
+                    "class": "icon"
+                }, props), events)
+        },
         img: function (options) {
             if (_.type(options) === "object") {
                 return _.createEle("img", "", _.extend({
@@ -524,42 +587,67 @@ _package("_", this, function () {
                 }
             })
         },
-        input: function (text, props) {
+        //输入域
+        input: function (text, props, events) {
             return _.createEle("input", "",
                 _.extend({
                     value: text,
                     type: "text",
-                }, props)
+                }, props), events
+            )
+        },
+        //div输入域
+        divInput: function (text, props, events) {
+            return _.div(text,
+                _.extend({
+                    contenteditable: true,
+                }, props), events
             )
         },
         rangeInput: function (options) {
-            var label = _.div(options.label || "")
-            var from = _.input("", _.extend({
-                name: "from"
-            }, options.from));
-            var to = _.input("", _.extend({
-                name: "to"
-            }, options.to))
-
-            _.addEvent("keydown", document, function (e) {
-                var keyCode = 0,
-                    e = e || event;
-                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
-                var el = e.target;
-                var range = _.closest(el, ".range");
-                if (keyCode == 13 && range && _.get(el, "name") === "from") {
-                    to.focus()
-                }
-            })
-            return _.div([label, from, to], {
-                "class": "range"
+            var label = _.div(options.label || "");
+            var cssname = "rangeInput";
+            var cssname_item = "rangeInput_item";
+            var type = options.type || "contenteditable";
+            var from, to;
+            if (type === "input") {
+                from = _.input("", _.extend({
+                    name: "from",
+                    "class": cssname_item
+                }, options.from));
+                to = _.input("", _.extend({
+                    name: "to",
+                    "class": cssname_item
+                }, options.to))
+            } else {
+                from = _.divInput("", _.extend({
+                    name: "from",
+                    "class": cssname_item
+                }, options.from));
+                to = _.divInput("", _.extend({
+                    name: "to",
+                    "class": cssname_item
+                }, options.to))
+            }
+            var _enter = function (e) {
+                e.preventDefault()
+                to.focus()
+            }
+            return _.div([label, from, _.div("to"), to], {
+                "class": cssname
+            }, {
+                enter: _enter
             })
         },
         listInput: function (options) {
             var label = _.div(options.label || "")
             var size = options.size || 1;
             var ipts = []
+            var cssname = "listInput";
+            var cssname_item = "listInput_item";
             var id = options.id || "list_1";
+            var type = options.type || "contenteditable";
+
             var _id = function (i) {
                 return id.replace(/(\w+)([\?|\d])/, function (a, p, n) {
                     return p + i;
@@ -570,42 +658,55 @@ _package("_", this, function () {
                     return n === "?" ? (p + 1) : p + (Number(n) + 1)
                 })
             }
-            var _item = function (id) {
-                // return _.input("", {
-                //     "class": "item",
-                //     name: "item",
-                //     id: id
-                // })
 
-                return _.div("", {
-                    id: id,
-                    contenteditable: true,
-                    "class": "item"
-                })
+            var _item = function (id) {
+                switch (type) {
+                    case "input":
+                        return _.input("", {
+                            "class": cssname_item,
+                            name: "item",
+                            id: id
+                        })
+                        break;
+                    default:
+                        return _.divInput("", {
+                            "class": cssname_item,
+                            name: "item",
+                            id: id,
+                        })
+                }
             }
             for (var i = 0; i < size; i++) {
                 ipts.push(_item(_id(i)))
             }
-            //回车，焦点移动到下一个
-            _.addEvent("keydown", document, function (e) {
-                var keyCode = 0,
-                    e = e || event;
-                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+            //回车事件
+            var _enter = function (e) {
+                e.preventDefault();
                 var el = e.target;
                 var id = el.id
-                var list = _.closest(el, ".list"); // el.parentNode
-                if (keyCode == 13 && list && el.tagName.toLowerCase() === "input") {
-                    var nextId = _nextId(id) //_id(1)
-                    var next = _.query("#" + nextId)
-                    if (!next) {
-                        next = _item(nextId)
-                        _.append(list, next)
-                    }
-                    next.focus()
+                if (el.innerText) {
+                    // _.set(el,"disable")
+                    _.remove(el, "contenteditable");
+                    _.append(el, _.icon("x",{},{
+                        click:function(){
+                            _.remove(el)
+                        }
+                    }))
                 }
-            })
+
+                var nextId = _nextId(id) //_id(1)
+                var next = _.query("#" + nextId)
+                if (!next) { //创建新输入框
+                    next = _item(nextId)
+                    var list = _.closest(el, "." + cssname);
+                    _.append(list, next)
+                }
+                next.focus()
+            }
             return _.div([label].concat(ipts), {
-                "class": "list"
+                "class": cssname
+            }, {
+                enter: _enter
             })
         },
         //遍历dom，操作

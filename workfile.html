@@ -5,18 +5,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- <meta http-equiv="X-UA-Compatible" content="ie=edge"> -->
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /> 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <title>Document</title>
     <link rel="stylesheet" href="index.css">
     <style>
         .hide {
             display: none
         }
-        .list  div.item{
+        .rangeInput ,
+        .listInput {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .rangeInput .rangeInput_item,
+        .listInput .listInput_item {
             width: 50px;
             border: 1px solid #ccc;
+            height: 25px;
+            line-height: 25px;
+            font-size: 12px;
+            padding: 0px 2px 0px 2px;
+            position: relative;
         }
-        .list  div.item[contenteditable]{
+        .listInput .listInput_item[disable]{
+            background: #eee;
+        }
+        .listInput .listInput_item .icon{
+            position:absolute;
+            right: 2px;
+            top:-2px;
+        }
+        .listInput .listInput_item .icon:hover{
+            cursor: pointer;
+            color: red;
+        }
+
+        .listInput .listInput_item[disable]:after{
+            content:"x";
+            position:absolute;
+            right: 2px;
+            top:-2px;
+
+        }
+        .listInput .listInput_item[disable]:hover:after{
+            color: red;
+        }
+        .rangeInput .rangeInput_item[contenteditable],
+        .listInput .listInput_item[contenteditable] {
             border: 1px solid #ccc;
             width: 50px;
         }
@@ -36,6 +71,45 @@
     </div>
     <script src="utils.js"></script>
     <script>
+        var _fn = function (cls) {
+            switch (true) {
+                case /^\.\w+/.test(cls):
+                    return "class"
+                    break;
+                case /^#\w+/.test(cls):
+                    return "id"
+                    break;
+                // case _.type(cls)==""
+
+            }
+        }
+
+        isDOM=function(obj){
+            if(typeof HTMLElement === 'object'){
+                return obj instanceof HTMLElement;
+            }
+            return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
+        }
+
+          var isDOM = ( typeof HTMLElement === 'object' ) ?
+                function(obj){
+                    return obj instanceof HTMLElement;
+                } :
+                function(obj){
+                    return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
+                }
+
+
+
+        console.log(_fn("div.test"))
+        console.log(_fn(".test"))
+        console.log(_fn("#test"))
+
+        console.log(_fn(_.query("#dialog")))
+        console.log(_.type(_.query("#dialog")))
+
+
+
         var subject = [{
                 label: "subject1",
                 filters: [1, 3]
@@ -106,7 +180,7 @@
 
         var _select = function () {
             var workfile = _.storage.get("workfile") || subject;
-            var select = _.select([""].concat(_.map(workfile,function (t, i) {
+            var select = _.select([""].concat(_.map(workfile, function (t, i) {
                 return {
                     value: t.filters,
                     label: t.label
@@ -135,7 +209,7 @@
 
         var select = _select();
 
-        var ul = _.ul(_.map(filterBlocks,function (t) {
+        var ul = _.ul(_.map(filterBlocks, function (t) {
             return _.li(_.checkbox({
                 label: t.label,
                 id: "checkobx_" + t.id,
@@ -193,7 +267,9 @@
                 }
 
                 switch (t.type) {
-                    case "range": case "includerange": case "omitrange":
+                    case "range":
+                    case "includerange":
+                    case "omitrange":
                         var range = _.rangeInput({
                             label: label,
                             from: {
@@ -207,7 +283,9 @@
                         })
                         blockItems.push(range)
                         break;
-                    case "list": case "includelist": case "omitlist":
+                    case "list":
+                    case "includelist":
+                    case "omitlist":
                         var list = _.listInput({
                             label: label,
                             size: size,
@@ -221,7 +299,6 @@
 
             var wrap = _.div(blockItems, {
                 "class": "block",
-                // blockid: block.id,
                 id: blockId
             })
 
