@@ -259,9 +259,9 @@ _package("_", this, function () {
             // _set(key, val)
         },
         remove: function (el, prop) {
-            if(prop){
+            if (prop) {
                 el.removeAttribute(prop)
-            }else{
+            } else {
                 el.parentNode.removeChild(el)
             }
         },
@@ -571,10 +571,18 @@ _package("_", this, function () {
                 return checkbox
             }
         },
-        select: function (arr, callback) {
+        select: function (arr, handleChange) {
             var ops = _.map(arr, function (t) {
-                return _.createEle("option", t.label, {
-                    value: t.value || t.label || ""
+                var label, value;
+                if (_.type(t) === "string") {
+                    label = t;
+                    value = t;
+                } else {
+                    label = t.label;
+                    value = t.value || t.label || ""
+                }
+                return _.createEle("option", label, {
+                    value: value
                 })
             })
             return _.createEle("select", ops, {
@@ -583,7 +591,7 @@ _package("_", this, function () {
                 change: function (e) {
                     console.log(this.value)
                     // console.log(e.target)
-                    callback && callback(this.value)
+                    handleChange && handleChange(this.value)
                 }
             })
         },
@@ -605,7 +613,9 @@ _package("_", this, function () {
             )
         },
         rangeInput: function (options) {
-            var label = _.div(options.label || "");
+            var label = _.div(options.label || "", {
+                "class": "label"
+            });
             var cssname = "rangeInput";
             var cssname_item = "rangeInput_item";
             var type = options.type || "contenteditable";
@@ -640,11 +650,15 @@ _package("_", this, function () {
             })
         },
         listInput: function (options) {
-            var label = _.div(options.label || "")
+            var label = _.div(options.label || "", {
+                "class": "label"
+            })
             var size = options.size || 1;
             var ipts = []
             var cssname = "listInput";
+            var cssname_group="listInput_group"
             var cssname_item = "listInput_item";
+            
             var id = options.id || "list_1";
             var type = options.type || "contenteditable";
 
@@ -657,6 +671,26 @@ _package("_", this, function () {
                 return id.replace(/(\w+)([\?|\d])/, function (a, p, n) {
                     return n === "?" ? (p + 1) : p + (Number(n) + 1)
                 })
+            }
+            //失去焦点
+            var _blur = function (e) {
+                var el = e.target;
+                if (el.innerText) {
+                    // _.set(el,"disable")
+                    _.remove(el, "contenteditable");
+                    _.append(el, _.icon("x", {}, {
+                        click: function () {
+                            // var list = _.closest(el, "." + cssname);
+                            _.remove(el)
+
+                            if (_.queryAll("." + cssname_item,inputGroup).length == 0) {
+                                // _.append(list, _item(_id(0)))
+                                _.append(inputGroup, _item(_id(0)))
+                            }
+                        }
+                    }))
+                }
+
             }
 
             var _item = function (id) {
@@ -673,6 +707,8 @@ _package("_", this, function () {
                             "class": cssname_item,
                             name: "item",
                             id: id,
+                        }, {
+                            blur: _blur
                         })
                 }
             }
@@ -684,26 +720,23 @@ _package("_", this, function () {
                 e.preventDefault();
                 var el = e.target;
                 var id = el.id
-                if (el.innerText) {
-                    // _.set(el,"disable")
-                    _.remove(el, "contenteditable");
-                    _.append(el, _.icon("x",{},{
-                        click:function(){
-                            _.remove(el)
-                        }
-                    }))
-                }
+
 
                 var nextId = _nextId(id) //_id(1)
                 var next = _.query("#" + nextId)
                 if (!next) { //创建新输入框
                     next = _item(nextId)
-                    var list = _.closest(el, "." + cssname);
-                    _.append(list, next)
+                    // var list = _.closest(el, "." + cssname);
+                    // _.append(list, next)
+                    _.append(inputGroup, next)
                 }
                 next.focus()
             }
-            return _.div([label].concat(ipts), {
+            var inputGroup=_.div(ipts,{
+                "class":cssname_group
+            })
+
+            return _.div([label,inputGroup], {  //[label].concat(ipts)
                 "class": cssname
             }, {
                 enter: _enter

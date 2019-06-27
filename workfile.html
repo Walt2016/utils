@@ -12,11 +12,36 @@
         .hide {
             display: none
         }
-        .rangeInput ,
-        .listInput {
+
+        .block {
+            margin-top: 10px;
+            width: 400px;
+        }
+
+        .block .title {
+            border-bottom: 1px solid #979797;
+            font-weight: bolder
+        }
+
+        .block .rangeInput,
+        .block .listInput,
+        .block .tips {
             display: flex;
             flex-wrap: wrap;
+            margin-top: 4px;
         }
+        .block .listInput .listInput_group{
+            display: flex;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .block .rangeInput .label,
+        .block .listInput .label,
+        .block .tips .label {
+            width: 80px;
+        }
+
         .rangeInput .rangeInput_item,
         .listInput .listInput_item {
             width: 50px;
@@ -26,30 +51,35 @@
             font-size: 12px;
             padding: 0px 2px 0px 2px;
             position: relative;
+            margin-right: 2px;
         }
-        .listInput .listInput_item[disable]{
+
+        /* .listInput .listInput_item[disable]{
             background: #eee;
-        }
-        .listInput .listInput_item .icon{
-            position:absolute;
+        } */
+        .listInput .listInput_item .icon {
+            position: absolute;
             right: 2px;
-            top:-2px;
+            top: -2px;
+            color: #d78d85;
         }
-        .listInput .listInput_item .icon:hover{
+
+        .listInput .listInput_item .icon:hover {
             cursor: pointer;
             color: red;
         }
 
-        .listInput .listInput_item[disable]:after{
-            content:"x";
-            position:absolute;
+        .listInput .listInput_item[disable]:after {
+            content: "x";
+            position: absolute;
             right: 2px;
-            top:-2px;
-
+            top: -2px;
         }
-        .listInput .listInput_item[disable]:hover:after{
+
+        .listInput .listInput_item[disable]:hover:after {
             color: red;
         }
+
         .rangeInput .rangeInput_item[contenteditable],
         .listInput .listInput_item[contenteditable] {
             border: 1px solid #ccc;
@@ -79,25 +109,25 @@
                 case /^#\w+/.test(cls):
                     return "id"
                     break;
-                // case _.type(cls)==""
+                    // case _.type(cls)==""
 
             }
         }
 
-        isDOM=function(obj){
-            if(typeof HTMLElement === 'object'){
-                return obj instanceof HTMLElement;
+        isDOM = function (obj) {
+            if (typeof HTMLElement === 'object') {
+                return obj instanceof HTMLElement;
             }
-            return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
+            return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
         }
 
-          var isDOM = ( typeof HTMLElement === 'object' ) ?
-                function(obj){
-                    return obj instanceof HTMLElement;
-                } :
-                function(obj){
-                    return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
-                }
+        var isDOM = (typeof HTMLElement === 'object') ?
+            function (obj) {
+                return obj instanceof HTMLElement;
+            } :
+            function (obj) {
+                return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
+            }
 
 
 
@@ -125,54 +155,88 @@
         ]
 
         var filterBlocks = [{
-            id: 1,
-            label: "Office Code",
-            inputs: [{
-                    label: "include range",
-                    type: "range"
-                },
-                {
-                    label: "include list",
-                    type: "list",
-                    size: 1
-                }
-            ]
-        }, {
-            id: 2,
-            label: "Acceptance No",
-            inputs: [{
-                    label: "include list",
-                    type: "includelist",
-                    size: 2
-                },
-                {
-                    label: "include range",
-                    type: "includerange"
-                }, {
-                    label: "omit list",
-                    type: "omitlist",
-                    size: 2
-                },
-                {
-                    label: "omit range",
-                    type: "omitrange"
-                },
+                id: 1,
+                label: "Office Code",
+                inputs: [{
+                        label: "include range",
+                        type: "range"
+                    },
+                    {
+                        label: "include list",
+                        type: "list",
+                        size: 1
+                    }
+                ]
+            }, {
+                id: 2,
+                label: "Acceptance No",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                        size: 1
+                    },
+                    {
+                        label: "include range",
+                        type: "includerange"
+                    }, {
+                        label: "omit list",
+                        type: "omitlist",
+                        size: 1
+                    },
+                    {
+                        label: "omit range",
+                        type: "omitrange"
+                    },
 
-            ]
-        }, {
-            id: 3,
-            label: "UW Year",
-            inputs: [{
-                    label: "include range",
-                    type: "range"
-                },
-                {
-                    label: "include list",
-                    type: "list",
-                    size: 3
-                }
-            ]
-        }]
+                ]
+            }, {
+                id: 3,
+                label: "UW Year",
+                inputs: [{
+                        label: "include range",
+                        type: "includerange"
+                    },
+                    {
+                        label: "include list",
+                        type: "includelist",
+                        size: 1
+                    }
+                ]
+            }, {
+                id: 4,
+                label: "RI Period",
+                inputs: [{
+                        label: "range",
+                        type: "range"
+                    },
+                    {
+                        label: "compare factor 1",
+                        type: "select",
+                        options:["P-Period","I-Inception Date","R-Renewal Date"]
+                    }
+                ]
+            },
+            {
+                id: 5,
+                label: "Location of Risk",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                        size: 1
+                    }, {
+                        label: "omit list",
+                        type: "omitlist",
+                        size: 1
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "999-select All,wild character is available.eg.'64*'"
+
+                    }
+                ]
+            }
+        ]
 
         var selectBlocks = [];
 
@@ -265,6 +329,9 @@
                 var _id = function (i) {
                     return [blockId, type, i].join("_")
                 }
+                var tips = t.tips;
+                var content = t.content;
+                var options=t.options;
 
                 switch (t.type) {
                     case "range":
@@ -293,6 +360,26 @@
                         })
                         blockItems.push(list)
                         break;
+                    case "tips":
+                        var tips = _.div([_.div(label, {
+                            "class": "label"
+                        }), _.div(content, {
+                            "class": "content"
+                        })], {
+                            "class": type
+                        })
+                        blockItems.push(tips)
+                        break;
+                    case "select":
+
+                    // var label=;
+                        var select=_.div([_.div(label, {
+                            "class": "label"
+                        }),_.select(options)]); 
+
+                        //
+                    blockItems.push(select)
+                        break;
                 }
             })
 
@@ -316,8 +403,10 @@
                     var title = _.query(".title", blockList)
                     title = title.innerText;
 
-                    var from = _.query("input[name='from']").value
-                    var to = _.query("input[name='to']").value
+                    // var from = _.query("input[name='from']").value
+                    // var to = _.query("input[name='to']").value
+                    var from = _.query("[name='from']").innerText
+                    var to = _.query("[name='to']").innerText
 
                     var range = ""; // "WHERE [column_name] BETWEEN from AND to"
                     if (from && !to) {
