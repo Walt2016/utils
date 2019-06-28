@@ -22,7 +22,18 @@
             border-bottom: 1px solid #979797;
             font-weight: bolder
         }
+        ul.namelist{
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 4px;
+            width: 450px;
 
+        }
+        ul.namelist li{
+            width: 150px;
+        }
+
+       
         .block .rangeInput,
         .block .listInput,
         .block .tips {
@@ -163,14 +174,15 @@
         var filterBlocks = [{
                 id: 1,
                 label: "Office Code",
-                inputs: [{
-                        label: "include range",
-                        type: "range"
-                    },
+                inputs: [
                     {
                         label: "include list",
-                        type: "list",
-                        size: 1
+                        type: "includelist"
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "01-HK Non-life,02-HK Life"
                     }
                 ]
             }, {
@@ -179,7 +191,6 @@
                 inputs: [{
                         label: "include list",
                         type: "includelist",
-                        size: 1
                     },
                     {
                         label: "include range",
@@ -187,7 +198,6 @@
                     }, {
                         label: "omit list",
                         type: "omitlist",
-                        size: 1
                     },
                     {
                         label: "omit range",
@@ -205,7 +215,6 @@
                     {
                         label: "include list",
                         type: "includelist",
-                        size: 1
                     }
                 ]
             }, {
@@ -224,6 +233,31 @@
             },
             {
                 id: 5,
+                label: "Class",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+
+                    }, {
+                        label: "include range",
+                        type: "includerange",
+                    }, {
+                        label: "omit list",
+                        type: "omitlist",
+                    },
+                    {
+                        label: "omit range",
+                        type: "omitrange",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "MOTOR OWN DAMAGE"
+                    }
+                ]
+            },
+            {
+                id: 6,
                 label: "Location of Risk",
                 inputs: [{
                         label: "include list",
@@ -237,11 +271,143 @@
                     {
                         label: "N.B.",
                         type: "tips",
-                        content: "999-select All,wild character is available.eg.'64*'"
-
+                        content: "999-select All,wild character is available. eg.'64*'"
                     }
                 ]
-            }
+            },
+            {
+                id: 7,
+                label: "Country of Cedant",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                    }, {
+                        label: "omit list",
+                        type: "omitlist",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "999-select All,wild character is available. eg.'64*'"
+                    }
+                ]
+            },
+            {
+                id: 8,
+                label: "Location of Cedant",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "INR,PKR,BDT,Nepal,Malv"
+                    }
+                ]
+            },
+            {
+                id: 9,
+                label: "Cedant",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "BARNSTABLE COUNTY MA"
+                    }
+                ]
+            }, {
+                id: 10,
+                label: "Country of Broker",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                        size: 1
+                    }, {
+                        label: "omit list",
+                        type: "omitlist",
+                        size: 1
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "999-select All,wild character is available. eg.'64*'"
+                    }
+                ]
+            },{
+                id: 11,
+                label: "Location of Broker",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "INR,PKR,BDT,Nepal,Malv"
+                    }
+                ]
+            },{
+                id: 12,
+                label: "Broker",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "BARNSTABLE COUNTY MA"
+                    }
+                ]
+            }, {
+                id: 13,
+                label: "Country of Paying",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                        size: 1
+                    }, {
+                        label: "omit list",
+                        type: "omitlist",
+                        size: 1
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "999-select All,wild character is available. eg.'64*'"
+                    }
+                ]
+            },{
+                id: 14,
+                label: "Location of Paying",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "INR,PKR,BDT,Nepal,Malv"
+                    }
+                ]
+            },{
+                id: 15,
+                label: "Paying",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "BARNSTABLE COUNTY MA"
+                    }
+                ]
+            }, 
         ]
 
         var selectBlocks = [];
@@ -279,11 +445,12 @@
 
         var select = _select();
 
-        var ul = _.ul(_.map(filterBlocks, function (t) {
+        var ul = _.ul(_.map(filterBlocks, function (t, i) {
+            var id = t.id || i
             return _.li(_.checkbox({
                 label: t.label,
-                id: "checkobx_" + t.id,
-                blockId: t.id
+                id: "checkobx_" + id,
+                blockId: id
             }))
         }), {
             "class": "namelist"
@@ -362,8 +529,8 @@
                         var list = _.listInput({
                             label: label,
                             size: size,
-                            groupId:blockId,
-                            type:type
+                            groupId: blockId,
+                            type: type
                             // id: _id(i)
                         })
                         blockItems.push(list)
