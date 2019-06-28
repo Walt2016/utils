@@ -30,7 +30,8 @@
             flex-wrap: wrap;
             margin-top: 4px;
         }
-        .block .listInput .listInput_group{
+
+        .block .listInput .listInput_group {
             display: flex;
             flex-wrap: wrap;
             flex: 1;
@@ -52,9 +53,10 @@
             padding: 0px 2px 0px 2px;
             position: relative;
             margin-right: 2px;
-            margin-top:2px;
+            margin-top: 2px;
         }
-        .listInput .listInput_item[active]{
+
+        .listInput .listInput_item[active] {
             border-color: #d78d85;
         }
 
@@ -216,7 +218,7 @@
                     {
                         label: "compare factor 1",
                         type: "select",
-                        options:["P-Period","I-Inception Date","R-Renewal Date"]
+                        options: ["P-Period", "I-Inception Date", "R-Renewal Date"]
                     }
                 ]
             },
@@ -316,7 +318,7 @@
                 }
             }
         })
-        _.append(".nav", [select, ul, tbn])
+        _.append([select, ul, tbn], ".nav")
         var _block = function (block) {
             var title = _.div(block.label, {
                 "class": "title"
@@ -335,7 +337,7 @@
                 }
                 var tips = t.tips;
                 var content = t.content;
-                var options=t.options;
+                var options = t.options;
 
                 switch (t.type) {
                     case "range":
@@ -360,7 +362,9 @@
                         var list = _.listInput({
                             label: label,
                             size: size,
-                            id: _id(i)
+                            groupId:blockId,
+                            type:type
+                            // id: _id(i)
                         })
                         blockItems.push(list)
                         break;
@@ -376,13 +380,13 @@
                         break;
                     case "select":
 
-                    // var label=;
-                        var select=_.div([_.div(label, {
+                        // var label=;
+                        var select = _.div([_.div(label, {
                             "class": "label"
-                        }),_.select(options)]); 
+                        }), _.select(options)]);
 
                         //
-                    blockItems.push(select)
+                        blockItems.push(select)
                         break;
                 }
             })
@@ -393,7 +397,7 @@
                 id: blockId
             })
 
-            _.append(".blockList", wrap)
+            _.append(wrap, ".blockList")
 
         }
         var _submitBtn = function () {
@@ -443,7 +447,7 @@
                     }
 
                     _.empty(".result")
-                    _.append(".result", [range, list])
+                    _.append([range, list], ".result")
                 }
             })
 
@@ -456,7 +460,7 @@
 
                 }
             })
-            _.append(".blockList", [btn, btn2])
+            _.append([btn, btn2], ".blockList")
         }
         var saveWorkfile = _.query("#saveWorkfile")
         _.addEvent("click", saveWorkfile, function () {

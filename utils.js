@@ -95,6 +95,77 @@ _package("_", this, function () {
                 listener: listener
             }); //listener
         },
+        removeEvent: function (type, el, listener) {
+            //  console.log(typeof el)   
+            // if (!_.isElement(el)) return false;
+            if (listener) {
+                if (window.removeEventListener) {
+                    el.removeEventListener(type, listener, {
+                        passive: false
+                    }); //false
+                } else {
+                    el.detachEvent('on' + type, listener);
+                }
+                //delete event
+                if (!el.events) {
+                    el.events = [];
+                }
+                var i = el.events.length;
+                while (i--) {
+                    if (el.events[i].type === type && el.events[i].listener === listener) el.events.splice(i, 1);
+                }
+            } else {
+                el.events && _.forEach(el.events, function (t) {
+                    if (type === "") {
+                        _.removeEvent(t.type, t.el, t.listener)
+                    } else {
+                        if (t.type === type) {
+                            _.removeEvent(t.type, t.el, t.listener)
+                        }
+                    }
+
+                });
+            }
+        },
+        //快捷键  全局键盘事件
+        shortcut: function (events) { //ele, key, callback
+            var keycodeMap = {
+                enter: 13, //回车
+                leftArrow: 37 //左箭头
+            }
+            var _shortcut = function (e) {
+                var keyCode = 0,
+                    e = e || event;
+                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+                var target = e.target;
+                for (var key in events) {
+                    if (keyCode === keycodeMap[key]) {
+                        events[key](e)
+                        // switch (keyCode) {
+                        //     case 13: //回车  判断光标位置 在指定区域内
+                        //         // if (_.closest(target, ele)) {
+                        //             callback(e)
+                        //         // }
+                        //         break;
+                        //     default:
+                        //         callback(e);
+                        // }
+                    }
+                }
+            }
+
+            // if (keyCode == key && _.closest(target, ele)) { //&& target == ele   _.closest(target, "." + ele.className)
+            //     callback(e)
+            // }
+
+            _.removeEvent("keydown", document); //先删除   ，最后绑定一次有效
+            _.addEvent("keydown", document, _shortcut)
+        },
+        //全局鼠标事件
+        globalClick: function (callback) {
+            _.removeEvent("click", document); //先删除   ，最后绑定一次有效
+            _.addEvent("click", document, callback)
+        },
         isDOM: function (obj) {
             if (typeof HTMLElement === 'object') {
                 return obj instanceof HTMLElement;
@@ -190,8 +261,8 @@ _package("_", this, function () {
             }
             return document.querySelector(selectors)
         },
-        append: function (el, child) {
-            var _append = function (el, child) {
+        append: function (child, el) {
+            var _append = function (child, el) {
                 if (_.type(child) === "array") {
                     _.forEach(child, function (t) {
                         t = _createTextNode(t)
@@ -201,6 +272,7 @@ _package("_", this, function () {
                     child = _createTextNode(child)
                     el && el.appendChild(child)
                 }
+                return el
             }
             var _createTextNode = function (t) {
                 if (_.indexOf(["string", "number", "date"], _.type(t)) >= 0) {
@@ -208,15 +280,12 @@ _package("_", this, function () {
                 }
                 return t
             }
-            if (_.type(el) === "string") {
+            if (!el) {
+                el = document.body
+            } else if (_.type(el) === "string") {
                 el = _.query(el)
             }
-            //_.type(child) === "string"
-            // if (["string", "number", "date"].indexOf(_.type(child)) >= 0) {
-            //     child = document.createTextNode(child)
-            // }
-
-            _append(el, child)
+            return _append(child, el)
         },
         replace: function (ele, newEle) {
             ele.parentNode.replaceChild(newEle, ele)
@@ -259,6 +328,7 @@ _package("_", this, function () {
             // _set(key, val)
         },
         remove: function (el, prop) {
+            if (!el) return;
             var _remove = function (el, prop) {
                 if (prop) {
                     el.removeAttribute(prop)
@@ -348,39 +418,40 @@ _package("_", this, function () {
         createEle: function (tag, text, props, events) {
             var _createEle = function (tag, text) {
                 var ele = document.createElement(tag)
-                return _appendChild(ele, text);
+                return _.append(text, ele);
+                // return _appendChild(ele, text);
             }
-            var _appendChild = function (ele, text) {
-                switch (_.type(text)) {
-                    case "string":
-                    case "number":
-                    case "date":
-                        if (ele.tagName === "INPUT") { //兼容ie8
-                            console.log(ele)
+            // var _appendChild = function (ele, text) {
+            //     switch (_.type(text)) {
+            //         case "string":
+            //         case "number":
+            //         case "date":
+            //             if (ele.tagName === "INPUT") { //兼容ie8
+            //                 console.log(ele)
 
-                        } else {
-                            ele.appendChild(document.createTextNode(text));
-                        }
+            //             } else {
+            //                 ele.appendChild(document.createTextNode(text));
+            //             }
 
-                        // _.append(ele,text)
-                        break;
-                    case "array":
-                        _.forEach(text, function (t) {
-                            _appendChild(ele, t)
-                        })
-                        break;
-                    case "null":
-                    case "nan":
-                    case "undefined":
-                        break;
-                    default:
-                        if (text.nodeType == 1) {
-                            ele.appendChild(text)
-                        }
-                        break;
-                }
-                return ele;
-            }
+            //             // _.append(ele,text)
+            //             break;
+            //         case "array":
+            //             _.forEach(text, function (t) {
+            //                 _appendChild(ele, t)
+            //             })
+            //             break;
+            //         case "null":
+            //         case "nan":
+            //         case "undefined":
+            //             break;
+            //         default:
+            //             if (text.nodeType == 1) {
+            //                 ele.appendChild(text)
+            //             }
+            //             break;
+            //     }
+            //     return ele;
+            // }
             var _appendProps = function (ele, props) {
                 for (var key in props) {
                     // _.set(ele, key, props[key])
@@ -396,32 +467,49 @@ _package("_", this, function () {
             }
             var _appendEvents = function (ele, events) {
                 for (var key in events) {
-                    switch (key) {
-                        case "enter": //回车
-                            _shortcut(ele, 13, events[key])
-                            break;
-                        case "leftArrow": //左箭头
-                            _shortcut(ele, 37, events[key])
-                            break;
-                        default:
-                            _.addEvent(key, ele, events[key]);
-                    }
+                    _.addEvent(key, ele, events[key]);
+                    // switch (key) {
+                    //     case "enter": //回车
+                    //         _shortcut(ele, 13, events[key])
+                    //         break;
+                    //     case "leftArrow": //左箭头
+                    //         _shortcut(ele, 37, events[key])
+                    //         break;
+                    //     default:
+                    //         _.addEvent(key, ele, events[key]);
+                    // }
                 }
                 return ele;
             }
 
             //键盘快捷键
-            var _shortcut = function (ele, key, callback) {
-                _.addEvent("keydown", document, function (e) {
-                    var keyCode = 0,
-                        e = e || event;
-                    keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
-                    var target = e.target;
-                    if (keyCode == key && _.closest(target, ele)) { //&& target == ele   _.closest(target, "." + ele.className)
-                        callback(e)
-                    }
-                })
-            }
+            // var _shortcut = function (ele, key, callback) {
+            //     // if(key===37){
+            //     //     _.removeEvent("keydown", document)
+            //     // }
+            //     //    var  events=["enter","leftArrow"]
+
+            //     _.addEvent("keydown", document, function (e) { //
+            //         var keyCode = 0,
+            //             e = e || event;
+            //         keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+            //         var target = e.target;
+            //         if (keyCode === key) {
+            //             switch (key) {
+            //                 case 13: //回车  判断光标位置 在指定区域内
+            //                     if (_.closest(target, ele)) {
+            //                         callback(e)
+            //                     }
+            //                     break;
+            //                 default:
+            //                     callback(e);
+            //             }
+            //         }
+            //         // if (keyCode == key && _.closest(target, ele)) { //&& target == ele   _.closest(target, "." + ele.className)
+            //         //     callback(e)
+            //         // }
+            //     })
+            // }
             // var i = tag.indexOf(" ");
             // if (i > 0) {
             //     var leftTag = tag.substring(0, i)
@@ -476,17 +564,19 @@ _package("_", this, function () {
             if (len == 1) {
                 ele = _createEle(tag, text)
             } else {
-                tags.forEach(function (t, i) {
+                _.forEach(tags, function (t, i) {
                     var tmp = _createEle(t)
                     if (i == 0) { //first child
                         parent = ele = tmp
                     }
                     if (i + 1 == len) { //last child
                         tmp = _createEle(t, text)
-                        _appendChild(parent, tmp)
+                        // _appendChild(parent, tmp)
+                        _.append(tmp, parent)
                     }
                     if (i > 0 && i < len) {
-                        _appendChild(parent, tmp)
+                        // _appendChild(parent, tmp)
+                        _.append(tmp, parent)
                         parent = tmp
                     }
                 })
@@ -671,41 +761,48 @@ _package("_", this, function () {
             var cssname_group = "listInput_group"
             var cssname_item = "listInput_item";
 
-            var id = options.id || "list_1";
-            var type = options.type || "contenteditable";
+            var id = options.id || "b0_list_1";
+            var tagType = options.tagType || "divInput";
+            var groupId = options.groupId
+            var type = options.type || cssname;
 
+            // var _id = function (i) {
+            //     return id.replace(/(\w+)([\?|\d]+)/, function (a, p, n) {
+            //         return p + i;
+            //     })
+            // }
+            // var _nextId = function (id) {
+            //     return id.replace(/(\w+)([\?|\d]+)/, function (a, p, n) {
+            //         return n === "?" ? (p + 1) : p + (Number(n) + 1)
+            //     })
+            // }
             var _id = function (i) {
-                return id.replace(/(\w+)([\?|\d])/, function (a, p, n) {
-                    return p + i;
-                })
+                return [groupId, type, i].join("_")
             }
             var _nextId = function (id) {
-                return id.replace(/(\w+)([\?|\d])/, function (a, p, n) {
-                    return n === "?" ? (p + 1) : p + (Number(n) + 1)
-                })
+                var arr = id.split("_")
+                var n = Number(arr.pop()) + 1
+                arr.push(n)
+                return arr.join("_")
             }
             //失去焦点
             var _blur = function (e) {
                 var el = e.target;
                 if (el.innerText) {
-                    // _.set(el,"disable")
                     _.remove(el, "contenteditable");
-                    _.append(el, _.icon("x", {}, {
+                    _.append(_.icon("x", {}, {
                         click: function () {
-                            // var list = _.closest(el, "." + cssname);
                             _.remove(el)
                             if (_.queryAll("." + cssname_item, inputGroup).length == 0) {
-                                // _.append(list, _item(_id(0)))
-                                _.append(inputGroup, _item(_id(0)))
+                                _.append(_item(_id(0)), inputGroup)
                             }
                         }
-                    }))
+                    }), el)
                 }
-
             }
 
             var _item = function (id) {
-                switch (type) {
+                switch (tagType) {
                     case "input":
                         return _.input("", {
                             "class": cssname_item,
@@ -729,46 +826,85 @@ _package("_", this, function () {
             var inputGroup = _.div(ipts, {
                 "class": cssname_group
             })
+            console.log(inputGroup)
+
+            var _beUpdate = function (el) {
+                _.set(el, "contenteditable", true)
+                var icon = _.query(".icon", el)
+                _.remove(icon)
+            }
+            var _inActive = function () {
+                var els = _.queryAll("." + cssname_item + "[active]") //inputGroup
+                _.remove(els, "active");
+            }
+
+            var _beActive = function (el) {
+                _inActive()
+                _.set(el, "active");
+            }
+
+            var _beFocus = function (el) {
+                // el.focus()
+                var val = el.innerText
+                setTimeout(function () {
+                    el.focus();
+                    el.value = '';
+                    el.value = val;
+                }, 0)
+            }
+
             //回车事件
             var _enter = function (e) {
-                e.preventDefault();
                 var el = e.target;
-                var id = el.id
-                var nextId = _nextId(id) //_id(1)
-                var next = _.query("#" + nextId)
-                if (!next) { //创建新输入框
-                    next = _item(nextId)
-                    // var list = _.closest(el, "." + cssname);
-                    // _.append(list, next)
-                    _.append(inputGroup, next)
+                
+                if (_.closest(el, "." + cssname_item)) {
+                    e.preventDefault();
+                    if (!el.innerText) return;
+                    var id = el.id
+                    var nextId = _nextId(id) //_id(1)
+                    var next = _.query("#" + nextId)
+                    if (!next) { //创建新输入框
+                        next = _item(nextId)
+                        var group = _.closest(el, "." + cssname_group)
+                        // _.append(next, inputGroup)
+                        _.append(next, group)
+                    }
+                    _beUpdate(next)
+                    // next.focus()
+                    _beActive(next)
+                    _beFocus(next)
                 }
-                next.focus()
-
-                //set active
-                var els = _.queryAll("." + cssname_item, inputGroup)
-                _.remove(els, "active");
-                _.set(next, "active");
             }
 
             //点击事件
             var handleActive = function (e) {
                 var el = e.target;
+                console.log(el)
                 if (el.className === cssname_item) {
-                    var els = _.queryAll("." + cssname_item, inputGroup)
-                    _.remove(els, "active");
-                    _.set(el, "active");
+                    _beActive(el)
+                } else {
+                    _inActive()
                 }
             }
             //左箭头 快捷键
-            var _leftArrow=function(e){
-                console.log(e)
-
+            var _leftArrow = function (e) {
+                console.log(e.target)
+                var el = _.query("." + cssname_item + "[active]")
+                if (!el) return;
+                _beUpdate(el)
+                _beFocus(el)
             }
+            //快捷键
+            _.shortcut({
+                enter: _enter,
+                leftArrow: _leftArrow
+            })
+            //全局点击
+            _.globalClick(handleActive)
+
             return _.div([label, inputGroup], { //[label].concat(ipts)
                 "class": cssname
             }, {
-                enter: _enter,
-                leftArrow:_leftArrow,
                 click: handleActive
             })
         },
@@ -3633,7 +3769,7 @@ _package("storage", _, function () {
                         })
                         hideInput.addBehavior("#default#userData");
                         this.userData = hideInput;
-                        _.append(document.body, hideInput)
+                        _.append(hideInput)
                     } catch (e) {
                         console.log(e)
                         return false
