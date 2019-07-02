@@ -22,41 +22,72 @@
             border-bottom: 1px solid #979797;
             font-weight: bolder
         }
-        ul.namelist{
+
+        ul.namelist {
             display: flex;
             flex-wrap: wrap;
             margin-top: 4px;
             width: 450px;
 
         }
-        ul.namelist li{
+
+        ul.namelist li {
             width: 150px;
         }
 
-       
+
         .block .rangeInput,
         .block .listInput,
+        .block .textInput,
+        .block .selectInput,
         .block .tips {
             display: flex;
             flex-wrap: wrap;
             margin-top: 4px;
+            line-height: 25px;
+            font-size: 12px;
+            width: 100%;
         }
 
+
+
+        .block .rangeInput .label,
+        .block .listInput .label,
+        .block .selectInput .label,
+        .block .tips .label {
+            width: 100px;
+        }
+
+        .block .rangeInput .input-group,
         .block .listInput .listInput_group {
             display: flex;
             flex-wrap: wrap;
             flex: 1;
         }
 
-        .block .rangeInput .label,
-        .block .listInput .label,
-        .block .tips .label {
-            width: 80px;
+        .input-group,
+        .btn-group {
+            display: flex;
+            flex-direction: row;
+            width: 200px;
+            /* flex-wrap: wrap; */
         }
 
-        .rangeInput .rangeInput_item,
-        .listInput .listInput_item {
+        .btn-group .btn {
+            width: 100px;
+        }
+
+        .block .rangeInput .rangeInput_to {
             width: 50px;
+            text-align: center
+        }
+
+
+        .rangeInput .rangeInput_item,
+        .listInput .listInput_item,
+        .selectInput select,
+        .textInput_item {
+
             border: 1px solid #ccc;
             height: 25px;
             line-height: 25px;
@@ -64,16 +95,19 @@
             padding: 0px 2px 0px 2px;
             position: relative;
             margin-right: 2px;
-            margin-top: 2px;
+            /* margin-top: 2px; */
+        }
+
+        .rangeInput .rangeInput_item,
+        .listInput .listInput_item,
+        .textInput_item {
+            width: 50px;
         }
 
         .listInput .listInput_item[active] {
             border-color: #d78d85;
         }
 
-        /* .listInput .listInput_item[disable]{
-            background: #eee;
-        } */
         .listInput .listInput_item .icon {
             position: absolute;
             right: 2px;
@@ -102,6 +136,60 @@
             border: 1px solid #ccc;
             width: 50px;
         }
+
+        .nav .select {
+            background: #FFFFFF;
+            border: 1px solid #979797;
+            height: 40px;
+            line-height: 40px;
+            opacity: 0.45;
+            font-family: PingFangSC-Regular;
+            font-size: 18px;
+            color: #333333;
+        }
+
+        #dialog_officecode {
+            width: 200px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #fff;
+            border: 1px solid #ccc;
+
+        }
+
+        #dialog_officecode .wrap {
+            display: flex;
+            flex-direction: row-reverse;
+        }
+
+        #dialog_officecode_close {
+            width: 20px;
+            text-align: center;
+            background: #ccc;
+            cursor: pointer;
+        }
+
+        #dialog_officecode_close:hover{
+            background: #eee
+        }
+
+        #dialog_officecode ul>li {
+            padding: 2px;
+            cursor: pointer;
+        }
+
+        .officecode {
+            display: flex;
+            flex-direction: column;
+            flex: 1
+        }
+
+        .officecode li:hover,
+        .officecode li[active] {
+            background: #979797;
+            color: white;
+        }
     </style>
 </head>
 
@@ -116,46 +204,14 @@
         <div class="btn" name="btn" id="saveWorkfile">save</div>
 
     </div>
+    <div class="hide" id="dialog_officecode">
+       
+    </div>
     <script src="utils.js"></script>
     <script>
-        var _fn = function (cls) {
-            switch (true) {
-                case /^\.\w+/.test(cls):
-                    return "class"
-                    break;
-                case /^#\w+/.test(cls):
-                    return "id"
-                    break;
-                    // case _.type(cls)==""
-
-            }
-        }
-
-        isDOM = function (obj) {
-            if (typeof HTMLElement === 'object') {
-                return obj instanceof HTMLElement;
-            }
-            return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
-        }
-
-        var isDOM = (typeof HTMLElement === 'object') ?
-            function (obj) {
-                return obj instanceof HTMLElement;
-            } :
-            function (obj) {
-                return obj && typeof obj === 'object' && obj.nodeType === 1 && typeof obj.nodeName === 'string';
-            }
-
-
-
-        console.log(_fn("div.test"))
-        console.log(_fn(".test"))
-        console.log(_fn("#test"))
-
-        console.log(_fn(_.query("#dialog")))
-        console.log(_.type(_.query("#dialog")))
-
-
+        // _.globalClick(function(e){
+        //     console.log(_.pos(e))
+        // })
 
         var subject = [{
                 label: "subject1",
@@ -170,12 +226,77 @@
                 filters: [1, 2, 3]
             }
         ]
+        var officeCode = [{
+                code: "01",
+                office: "HK Non-Life"
+            },
+            {
+                code: "02",
+                office: "HK Life"
+            },
+            {
+                code: "11",
+                office: "Labuan Non-Life"
+            },
+            {
+                code: "21",
+                office: "UK Non-Life"
+            },
+            {
+                code: "31",
+                office: "China Non-Life"
+            },
+            {
+                code: "32",
+                office: "China Life"
+            },
+            {
+                code: "33",
+                office: "China SH Non-Life"
+            }
+        ]
+
+       var closeBtn= _.icon("x",{
+           id:"dialog_officecode_close"
+       },{
+            click:function(e){
+                var dialog = _.query("#dialog_officecode")
+                _.hide(dialog)
+            }
+        })
+        var ul=_.ul(officeCode.map(function (t) {
+            return _.li([t.code, t.office], {
+                "class": "item",
+                code: t.code
+            }, {
+                click: function (e) {
+                    var dialog = _.query("#dialog_officecode")
+                    var el = e.target
+                    _.remove(el, "update")
+                    var source = _.get(dialog, "source")
+                    source=_.query("#" + source)
+
+                    source.innerText = _.get(el, "code")
+                    _.hide(dialog)
+                    
+                    _.callEvent(source,"blur")
+                    _.callEvent(source,"next")
+                  
+                }
+            })
+        }), {
+            "class": "officecode"
+        })
+
+        _.append(_.div([closeBtn,ul],{
+            "class":"wrap"
+        }), "#dialog_officecode")
+
 
         var filterBlocks = [{
                 id: 1,
                 label: "Office Code",
-                inputs: [
-                    {
+                inputs: [{
                         label: "include list",
                         type: "includelist"
                     },
@@ -337,7 +458,7 @@
                         content: "999-select All,wild character is available. eg.'64*'"
                     }
                 ]
-            },{
+            }, {
                 id: 11,
                 label: "Location of Broker",
                 inputs: [{
@@ -350,7 +471,7 @@
                         content: "INR,PKR,BDT,Nepal,Malv"
                     }
                 ]
-            },{
+            }, {
                 id: 12,
                 label: "Broker",
                 inputs: [{
@@ -381,7 +502,7 @@
                         content: "999-select All,wild character is available. eg.'64*'"
                     }
                 ]
-            },{
+            }, {
                 id: 14,
                 label: "Location of Paying",
                 inputs: [{
@@ -394,7 +515,7 @@
                         content: "INR,PKR,BDT,Nepal,Malv"
                     }
                 ]
-            },{
+            }, {
                 id: 15,
                 label: "Paying",
                 inputs: [{
@@ -407,7 +528,53 @@
                         content: "BARNSTABLE COUNTY MA"
                     }
                 ]
-            }, 
+            },
+            {
+                id: 16,
+                label: "Type of Risk",
+                inputs: [{
+                        label: "include list",
+                        type: "includelist",
+
+                    }, {
+                        label: "include range",
+                        type: "includerange",
+                    }, {
+                        label: "omit list",
+                        type: "omitlist",
+                    },
+                    {
+                        label: "omit range",
+                        type: "omitrange",
+                    },
+                    {
+                        label: "N.B.",
+                        type: "tips",
+                        content: "MOTOR OWN DAMAGE"
+                    }
+                ]
+            }, {
+                id: 17,
+                label: "Retro Treaty",
+                inputs: [{
+                    label: "include list",
+                    type: "includelist",
+
+                }]
+            },
+            {
+                id: 18,
+                label: "Commitment",
+                inputs: [{
+                        label: "range",
+                        type: "range",
+                    },
+                    {
+                        label: "index currency",
+                        type: "text",
+                    }
+                ]
+            },
         ]
 
         var selectBlocks = [];
@@ -531,29 +698,23 @@
                             size: size,
                             groupId: blockId,
                             type: type
-                            // id: _id(i)
                         })
                         blockItems.push(list)
                         break;
                     case "tips":
-                        var tips = _.div([_.div(label, {
-                            "class": "label"
-                        }), _.div(content, {
-                            "class": "content"
-                        })], {
-                            "class": type
-                        })
+                        var tips = _.tips(label, content)
                         blockItems.push(tips)
                         break;
                     case "select":
-
-                        // var label=;
-                        var select = _.div([_.div(label, {
-                            "class": "label"
-                        }), _.select(options)]);
-
-                        //
+                        var select = _.selectInput({
+                            label: label,
+                            options: options
+                        })
                         blockItems.push(select)
+                        break;
+                    case "text":
+                        var textInput = _.textInput(label)
+                        blockItems.push(textInput)
                         break;
                 }
             })
@@ -627,7 +788,10 @@
 
                 }
             })
-            _.append([btn, btn2], ".blockList")
+            var btnGroup = _.div([btn, btn2], {
+                "class": "btn-group"
+            })
+            _.append(btnGroup, ".blockList")
         }
         var saveWorkfile = _.query("#saveWorkfile")
         _.addEvent("click", saveWorkfile, function () {
@@ -638,17 +802,13 @@
 
             var workfile = _.storage.get("workfile");
             if (workfile) {
-
                 workfile.push({
                     label: name
                 })
                 console.log(workfile)
                 _.storage.set("workfile", workfile)
-
                 _.replace(select, _select())
-
             } else {
-
                 _.storage.set("workfile", subject)
             }
         })

@@ -11,10 +11,9 @@ function _package(namespaces, root, factory) {
     }
 };
 
-//工具 html
+//工具 html //htmlUtils
 _package("_", this, function () {
     'use strict'
-    //htmlUtils
     var _ = {
         createClass: function () {
             function defineProperties(target, props) {
@@ -127,11 +126,28 @@ _package("_", this, function () {
                 });
             }
         },
+        callEvent: function (el, type) {
+            _.forEach(el.events, function (t) {
+                if (t.type === type) {
+                    t.listener(el)
+                }
+            })
+        },
+        event: function (el, events) {
+            for (var key in events) {
+                _.addEvent(key, el, function (e) {
+                    events[key].call(el, e)
+                })
+            }
+        },
         //快捷键  全局键盘事件
         shortcut: function (events) { //ele, key, callback
             var keycodeMap = {
                 enter: 13, //回车
-                leftArrow: 37 //左箭头
+                leftArrow: 37, //左箭头
+                upArrow: 38, //上箭头
+                rightArrow: 39, //右箭头
+                downArrow: 40 //下箭头
             }
             var _shortcut = function (e) {
                 var keyCode = 0,
@@ -140,7 +156,7 @@ _package("_", this, function () {
                 var target = e.target;
                 for (var key in events) {
                     if (keyCode === keycodeMap[key]) {
-                        events[key](e)
+                        events[key] && events[key](e)
                         // switch (keyCode) {
                         //     case 13: //回车  判断光标位置 在指定区域内
                         //         // if (_.closest(target, ele)) {
@@ -174,7 +190,6 @@ _package("_", this, function () {
         },
         selectorType: function (cls) {
             var type = "tag"
-            //    if(_.type(cls)==="string") {
             switch (true) {
                 case /^\.\w+/.test(cls):
                     type = "class"
@@ -297,6 +312,7 @@ _package("_", this, function () {
             el.innerText = "";
         },
         get: function (el, prop) {
+            if (!el) return;
             if (prop === "class") { //IE8不能通过class名获取元素
                 return el.className
             }
@@ -310,6 +326,7 @@ _package("_", this, function () {
         },
         //IE6/7不支持setAttribute('class',xxx)方式设置元素的class。 
         set: function (el, key, val) {
+            if (!el) return;
             if (key === "class") {
                 el.className = val
             } else {
@@ -326,6 +343,9 @@ _package("_", this, function () {
             //     }
             // }
             // _set(key, val)
+        },
+        has: function (el, prop) {
+            return el.hasAttribute(prop)
         },
         remove: function (el, prop) {
             if (!el) return;
@@ -344,13 +364,13 @@ _package("_", this, function () {
                 _remove(el, prop)
             }
         },
-        //兼容IE ，替换(Array like) nodeList.forEach
+        //兼容IE ，nodeList.forEach
         forEach: function (arr, callback) {
             for (var i = 0; i < arr.length; i++) {
                 callback(arr[i])
             }
         },
-        //兼容ie8 不支持str.trim()
+        //兼容ie8
         trim: function (str) {
             return str.replace(/(^\s*)|(\s*$)/g, "");
         },
@@ -412,6 +432,70 @@ _package("_", this, function () {
             }
             return text === null ? _.start(tag, options) : _.start(tag, options) + text + _.end(tag);
         },
+        css: function (el, opt) { //todo
+            var args = Array.prototype.slice.call(arguments),
+                len = args.length;
+            var needpre = function (str) {
+                var reg = RegExp(['transform', 'transition', 'animation', 'box-shadow', 'flex'].join('|')) ////,'@keyframes'
+                return reg.test(str);
+            }
+            var autoprefixer = function (key, val) {
+                // var self = this;
+                if (needpre(key)) {
+                    ['-webkit-', '-moz-', '-o-', ''].forEach(function (t) {
+                        el.style[t + key] = val;
+                    })
+                } else {
+                    el.style[key] = val;
+                }
+            }
+            var keys = ['font-size', 'line-height', 'border-radius', 'border-width', 'padding', 'margin'];
+            _.forEach(['padding', 'margin', ''], function (pre) {
+                keys = keys.concat(['top', 'left', 'bottom', 'right'].map(function (t) {
+                    return pre ? pre + '-' + t : t;
+                }))
+            });
+            _.forEach(['max', 'min', ''], function (pre) {
+                keys = keys.concat(['width', 'height'].map(function (t) {
+                    return pre ? pre + '-' + t : t;
+                }))
+            });
+
+            //单位
+            var autounit = function (key, val) {
+                if (/^0$/.test(val)) return val;
+                return !!~keys.indexOf(key) ? ("" + val).replace(/^\d+(\.\d+)?$/, function (match) {
+                    return match + "px";
+                }) : val;
+            }
+
+            if (len === 2) {
+                if (_.type(opt) === "object") {
+                    for (var key in opt) {
+                        // css()
+                        var val = opt[key];
+                        val = autounit(key, val)
+                        el.style[key] = val;
+                        // autoprefixer.call(el, key, val);
+                    }
+                }
+            } else if (len === 3) {
+                // prop, val
+                el.style[opt] = args[2];
+                // autoprefixer.call(el, opt, arguments[1]);
+            }
+            return el;
+        },
+        isShow: function (el) {
+            //display:none  el.offsetWidth ==0  不占空间
+            //opacity:0 el.offsetWidth>0  占空间
+            el = _.isDOM(el) ? el : _.query(el);
+            return el.offsetWidth > 0 || el.offsetHeight > 0;
+        },
+        isHide: function (el) {
+            el = _.isDOM(el) ? el : _.query(el);
+            return el.offsetWidth <= 0 && el.offsetHeight <= 0;
+        },
         //创建DOm 方式
         //ie 8中
         // var a={"class":1}错误（缺少标识符、字符串或数字） var a={"class":1}正确
@@ -419,39 +503,7 @@ _package("_", this, function () {
             var _createEle = function (tag, text) {
                 var ele = document.createElement(tag)
                 return _.append(text, ele);
-                // return _appendChild(ele, text);
             }
-            // var _appendChild = function (ele, text) {
-            //     switch (_.type(text)) {
-            //         case "string":
-            //         case "number":
-            //         case "date":
-            //             if (ele.tagName === "INPUT") { //兼容ie8
-            //                 console.log(ele)
-
-            //             } else {
-            //                 ele.appendChild(document.createTextNode(text));
-            //             }
-
-            //             // _.append(ele,text)
-            //             break;
-            //         case "array":
-            //             _.forEach(text, function (t) {
-            //                 _appendChild(ele, t)
-            //             })
-            //             break;
-            //         case "null":
-            //         case "nan":
-            //         case "undefined":
-            //             break;
-            //         default:
-            //             if (text.nodeType == 1) {
-            //                 ele.appendChild(text)
-            //             }
-            //             break;
-            //     }
-            //     return ele;
-            // }
             var _appendProps = function (ele, props) {
                 for (var key in props) {
                     // _.set(ele, key, props[key])
@@ -468,48 +520,10 @@ _package("_", this, function () {
             var _appendEvents = function (ele, events) {
                 for (var key in events) {
                     _.addEvent(key, ele, events[key]);
-                    // switch (key) {
-                    //     case "enter": //回车
-                    //         _shortcut(ele, 13, events[key])
-                    //         break;
-                    //     case "leftArrow": //左箭头
-                    //         _shortcut(ele, 37, events[key])
-                    //         break;
-                    //     default:
-                    //         _.addEvent(key, ele, events[key]);
-                    // }
                 }
                 return ele;
             }
 
-            //键盘快捷键
-            // var _shortcut = function (ele, key, callback) {
-            //     // if(key===37){
-            //     //     _.removeEvent("keydown", document)
-            //     // }
-            //     //    var  events=["enter","leftArrow"]
-
-            //     _.addEvent("keydown", document, function (e) { //
-            //         var keyCode = 0,
-            //             e = e || event;
-            //         keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
-            //         var target = e.target;
-            //         if (keyCode === key) {
-            //             switch (key) {
-            //                 case 13: //回车  判断光标位置 在指定区域内
-            //                     if (_.closest(target, ele)) {
-            //                         callback(e)
-            //                     }
-            //                     break;
-            //                 default:
-            //                     callback(e);
-            //             }
-            //         }
-            //         // if (keyCode == key && _.closest(target, ele)) { //&& target == ele   _.closest(target, "." + ele.className)
-            //         //     callback(e)
-            //         // }
-            //     })
-            // }
             // var i = tag.indexOf(" ");
             // if (i > 0) {
             //     var leftTag = tag.substring(0, i)
@@ -571,11 +585,9 @@ _package("_", this, function () {
                     }
                     if (i + 1 == len) { //last child
                         tmp = _createEle(t, text)
-                        // _appendChild(parent, tmp)
                         _.append(tmp, parent)
                     }
                     if (i > 0 && i < len) {
-                        // _appendChild(parent, tmp)
                         _.append(tmp, parent)
                         parent = tmp
                     }
@@ -710,6 +722,7 @@ _package("_", this, function () {
         divInput: function (text, props, events) {
             return _.div(text,
                 _.extend({
+                    "class": "textInput_item",
                     contenteditable: true,
                 }, props), events
             )
@@ -719,7 +732,9 @@ _package("_", this, function () {
                 "class": "label"
             });
             var cssname = "rangeInput";
+            var cssname_group = "input-group"
             var cssname_item = "rangeInput_item";
+            var cssname_to = "rangeInput_to";
             var type = options.type || "contenteditable";
             var from, to;
             if (type === "input") {
@@ -743,12 +758,23 @@ _package("_", this, function () {
             }
             var _enter = function (e) {
                 e.preventDefault()
-                to.focus()
+                var el = e.target;
+                if (_.closest(el, "." + cssname_item)) {
+                    to.focus()
+                }
+
             }
-            return _.div([label, from, _.div("to"), to], {
-                "class": cssname
-            }, {
+            var group = _.div([from, _.div("to", {
+                "class": cssname_to
+            }), to], {
+                "class": cssname_group
+            })
+
+            _.shortcut({
                 enter: _enter
+            })
+            return _.div([label, group], {
+                "class": cssname
             })
         },
         listInput: function (options) {
@@ -766,16 +792,6 @@ _package("_", this, function () {
             var groupId = options.groupId
             var type = options.type || cssname;
 
-            // var _id = function (i) {
-            //     return id.replace(/(\w+)([\?|\d]+)/, function (a, p, n) {
-            //         return p + i;
-            //     })
-            // }
-            // var _nextId = function (id) {
-            //     return id.replace(/(\w+)([\?|\d]+)/, function (a, p, n) {
-            //         return n === "?" ? (p + 1) : p + (Number(n) + 1)
-            //     })
-            // }
             var _id = function (i) {
                 return [groupId, type, i].join("_")
             }
@@ -787,18 +803,50 @@ _package("_", this, function () {
             }
             //失去焦点
             var _blur = function (e) {
-                var el = e.target;
-                if (el.innerText) {
-                    _.remove(el, "contenteditable");
-                    _.append(_.icon("x", {}, {
-                        click: function () {
-                            _.remove(el)
-                            if (_.queryAll("." + cssname_item, inputGroup).length == 0) {
-                                _.append(_item(_id(0)), inputGroup)
-                            }
+                var el = e.target || e;
+                // if (!_.has(el, "update") && el.innerText) {
+                _.remove(el, "contenteditable");
+                _.append(_.icon("x", {}, {
+                    click: function () {
+                        _.remove(el)
+                        if (_.queryAll("." + cssname_item, inputGroup).length == 0) {
+                            _.append(_item(_id(0)), inputGroup)
                         }
-                    }), el)
+                    }
+                }), el)
+                // }
+                // var dialog=_.query("#dialog_officecode")
+                // _.hide(dialog)
+            }
+            //建议对话框
+            var _suggestionDialog = function (el) {
+                var dialog = _.query("#dialog_officecode")
+                var p = _.pos(el)
+                _.css(dialog, {
+                    position: "absolute",
+                    top: p.y + p.height,
+                    left: p.x
+                })
+                _.set(dialog, "source", el.id)
+                _.show(dialog)
+            }
+            var _focus = function (e) {
+                var el = e.target;
+                _.set(el, "update")
+                _suggestionDialog(el)
+            }
+            var _nextItem = function (el) {
+                var id = el.id
+                var nextId = _nextId(id) //_id(1)
+                var next = _.query("#" + nextId)
+                if (!next) { //创建新输入框
+                    next = _item(nextId)
+                    var group = _.closest(el, "." + cssname_group)
+                    _.append(next, group)
                 }
+                _beUpdate(next)
+                _beActive(next)
+                _beFocus(next)
             }
 
             var _item = function (id) {
@@ -816,7 +864,9 @@ _package("_", this, function () {
                             name: "item",
                             id: id,
                         }, {
-                            blur: _blur
+                            blur: _blur,
+                            focus: _focus,
+                            next: _nextItem
                         })
                 }
             }
@@ -826,7 +876,6 @@ _package("_", this, function () {
             var inputGroup = _.div(ipts, {
                 "class": cssname_group
             })
-            console.log(inputGroup)
 
             var _beUpdate = function (el) {
                 _.set(el, "contenteditable", true)
@@ -853,26 +902,22 @@ _package("_", this, function () {
                 }, 0)
             }
 
+
             //回车事件
             var _enter = function (e) {
                 var el = e.target;
-                
+                var dialog = _.query("#dialog_officecode")
+                if (_.isShow(dialog)) {
+                    var li = _.query("li[active]", dialog)
+                    el.innerText = _.get(li, "code")
+                    _.hide(dialog)
+                }
                 if (_.closest(el, "." + cssname_item)) {
                     e.preventDefault();
-                    if (!el.innerText) return;
-                    var id = el.id
-                    var nextId = _nextId(id) //_id(1)
-                    var next = _.query("#" + nextId)
-                    if (!next) { //创建新输入框
-                        next = _item(nextId)
-                        var group = _.closest(el, "." + cssname_group)
-                        // _.append(next, inputGroup)
-                        _.append(next, group)
+                    // if (!el.innerText) return;
+                    if (el.innerText) {
+                        _nextItem(el);
                     }
-                    _beUpdate(next)
-                    // next.focus()
-                    _beActive(next)
-                    _beFocus(next)
                 }
             }
 
@@ -886,7 +931,7 @@ _package("_", this, function () {
                     _inActive()
                 }
             }
-            //左箭头 快捷键
+            //左箭头 快捷键  变可编辑
             var _leftArrow = function (e) {
                 console.log(e.target)
                 var el = _.query("." + cssname_item + "[active]")
@@ -894,10 +939,39 @@ _package("_", this, function () {
                 _beUpdate(el)
                 _beFocus(el)
             }
+
+            //控制dialog选择
+            var _downArrow = function (e) {
+                var dialog = _.query("#dialog_officecode")
+                if (_.isShow(dialog)) {
+                    var li = _.query("li[active]", dialog) //li[active]
+                    if (!li) {
+                        li = _.query("li", dialog)
+                    }
+                    var nextLi = li.nextSibling;
+                    _.remove(li, "active");
+                    _.set(nextLi, "active")
+                }
+            }
+            var _upArrow = function (e) {
+                var dialog = _.query("#dialog_officecode")
+                if (_.isShow(dialog)) {
+                    var li = _.query("li[active]", dialog) //li[active]
+                    if (!li) {
+                        li = _.query("li", dialog)
+                    }
+                    var preLi = li.previousSibling
+                    _.remove(li, "active");
+                    _.set(preLi, "active")
+                }
+
+            }
             //快捷键
             _.shortcut({
                 enter: _enter,
-                leftArrow: _leftArrow
+                leftArrow: _leftArrow,
+                downArrow: _downArrow,
+                upArrow: _upArrow
             })
             //全局点击
             _.globalClick(handleActive)
@@ -906,6 +980,34 @@ _package("_", this, function () {
                 "class": cssname
             }, {
                 click: handleActive
+            })
+        },
+        selectInput: function (options) {
+            var label = options.label;
+            var arr = options.options
+            var cssname = "selectInput"
+            return _.div([_.div(label, {
+                "class": "label"
+            }), _.select(arr)], {
+                "class": cssname
+            });
+        },
+        textInput: function (label) {
+            var cssname = "textInput"
+            return _.div([_.div(label, {
+                "class": "label"
+            }), _.divInput("")], {
+                "class": cssname
+            });
+        },
+        tips: function (label, content) {
+            var cssname = "tips"
+            return _.div([_.div(label, {
+                "class": "label"
+            }), _.div(content, {
+                "class": "content"
+            })], {
+                "class": cssname
             })
         },
         //遍历dom，操作
@@ -957,10 +1059,16 @@ _package("_", this, function () {
             return el;
         },
         show: function (el) {
+            if (!_.isDOM(el)) {
+                el = _.query(el)
+            }
             _.removeClass(el, "hide")
             _.addClass(el, "show")
         },
         hide: function (el) {
+            if (!_.isDOM(el)) {
+                el = _.query(el)
+            }
             _.removeClass(el, "show")
             _.addClass(el, "hide")
         },
@@ -987,6 +1095,68 @@ _package("_", this, function () {
     });
 
     return _;
+});
+
+
+//获取位置坐标
+_package("pos", _, function () {
+    function Position(e) {
+        if (!(this instanceof Position)) return new Position(e);
+
+        if (_.type(e) === "mouseevent") {
+            return this.mouseEventPos(e)
+        }
+        if (_.isDOM(e)) {
+            return this.domPos(e)
+        }
+        return this.domPos(e.target)
+    }
+
+    return _.createClass(Position, {
+        mouseEventPos: function (e) {
+            var x = e.clientX;
+            var y = e.clientY;
+            return {
+                x: x,
+                y: y
+            }
+        },
+        domPos: function (el) {
+            function Pos(x, y, el) {
+                // if (_.isDocument(el)) el = document.doctype ? window.document.documentElement : document.body;
+                this.x = x;
+                this.y = y;
+                this.time = +new Date();
+                this.el = el;
+                this.width = el.clientWidth; //不包括边框   el.offsetWidth包括边框;
+                this.height = el.clientHeight; //el.offsetHeight;
+                this.scrollTop = el.scrollTop;
+                this.scrollHeight = el.scrollHeight;
+                this.offsetHeight = el.offsetHeight;
+                this.top = y;
+                this.left = x;
+                this.right = x + this.width;
+                this.bottom = y + this.height;
+            }
+
+            function _pos(el) {
+                var pos = new Pos(el.offsetLeft, el.offsetTop, el);
+                var target = el.offsetParent;
+                while (target) {
+                    pos.x += target.offsetLeft;
+                    pos.y += target.offsetTop;
+                    target = target.offsetParent
+                }
+                // if (offsetPos) {
+                //     pos.x -= offsetPos.x;
+                //     pos.y -= offsetPos.y;
+                // }
+                return pos;
+            }
+            return _pos(el);
+
+        }
+    })
 });
 
 
@@ -1302,10 +1472,8 @@ _package("nav", _, function () {
                     "class": cls["1"]
                 })
             }
-
             // var active = url.indexOf(t.url) >= 0 ? " active" : "";
             var active = checkActive(t) ? " active" : "";
-
             return _.div([genLink(t)].concat(lineCenter), {
                 "class": cls["0"] + active,
                 tabindex: "-1"
@@ -1475,30 +1643,19 @@ _package("grid", _, function () {
             if (config.check) colgroup.unshift(_.col("", {
                 style: "width: 5%;"
             }));
-            // return colgroup
             return _.colgroup(colgroup)
         },
         _row: function (r, i) {
             var _this = this;
             var config = this.config;
             var tfoot = this.tfoot;
-            // var arr = _.obj2arr(r),
-            //     vals = arr.vals;
-            // var props = arr.keys;
             var props = this.props;
-            // var vals=[]
-            // props.forEach(function(t){
-            //     vals.push(r[t])
-            // })
-
             var fmts = this.fmts;
             var typs = this.typs;
             var offset = this.offset;
             var count = this.count
-            // var cell = vals.
             var cell = typs.map(function (t, j) {
                 var typ = t; //typs[j]
-                // var val = vals[j]
                 var fmt = fmts[j]
                 var prop = props[j]
                 var val = r[prop]
@@ -1649,7 +1806,6 @@ _package("grid", _, function () {
             _this.rs.sort(_.sortBy(prop, seq === "asc", typ))
             var tbody = _this._tbody();
             var oldTbody = _.query("tbody", _this.grid)
-            // oldTbody.parentNode.replaceChild(tbody, oldTbody)
             _.replace(oldTbody, tbody)
         },
         _optPanel: function () {

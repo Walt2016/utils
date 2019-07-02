@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .hide {
+            display: none;
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .input-group .input-item {
+            width: 50px;
+        }
+
+        .input-group .input-item[active] {
+            border-color: #d78d85;
+        }
+
+        .input-group .input-item .icon {
+            position: absolute;
+            right: 2px;
+            top: -2px;
+            color: #d78d85;
+        }
+
+        .input-group .input-item .icon:hover {
+            cursor: pointer;
+            color: red;
+        }
+
+        .input-group .input-item[contenteditable] {
+            border: 1px solid #ccc;
+            width: 50px;
+        }
+
+        .suggest_wrapper {
+            width: 200px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #fff;
+            border: 1px solid #ccc;
+
+        }
+
+        .suggest_wrapper ul {
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .suggest_wrapper li {
+            list-style: none
+        }
+
+        .suggest_wrapper .wrap {
+            display: flex;
+            flex-direction: row-reverse;
+        }
+
+        #suggest_wrapper_close {
+            width: 20px;
+            text-align: center;
+            background: #ccc;
+            cursor: pointer;
+        }
+
+        #suggest_wrapper_close:hover {
+            background: #eee
+        }
+
+        .suggest_wrapper ul>li {
+            padding: 2px;
+            cursor: pointer;
+        }
+
+        .officecode {
+            display: flex;
+            flex-direction: column;
+            flex: 1
+        }
+
+        .officecode li:hover,
+        .officecode li[active] {
+            background: #979797;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="input-group">
+        <div class="input-item" contenteditable="true" id="input_item_0"></div>
+    </div>
+
+    <div class="suggest_wrapper hide"></div>
+
+    <script src="utils.js"></script>
+    <script>
+        var officeCode = [{
+                key: "01",
+                value: "HK Non-Life"
+            },
+            {
+                key: "02",
+                value: "HK Life"
+            },
+            {
+                key: "11",
+                value: "Labuan Non-Life"
+            },
+            {
+                key: "21",
+                value: "UK Non-Life"
+            },
+            {
+                key: "31",
+                value: "China Non-Life"
+            },
+            {
+                key: "32",
+                value: "China Life"
+            },
+            {
+                key: "33",
+                value: "China SH Non-Life"
+            }
+        ]
+
+
+
+
+        _package("suggest", _, function () {
+            var Suggest = function (options) {
+                if (!(this instanceof Suggest)) return new Suggest(options);
+                var css = this.css = {
+                    wrap: "suggest_wrapper",
+                    item: "suggest_wrapper_item",
+                    close: "suggest_wrapper_close"
+                }
+                var el_css = this.el_css = {
+                    group: "input-group",
+                    item: "input-item"
+                }
+                this.dialog = _.query("." + this.css.wrap);
+                this.data = options.data || []
+                var el = this.el = _.isDOM(options.el) ? options.el : _.query(options.el);
+                var _this = this;
+                this.init(this.data)
+
+                var el_text = el.innerText
+
+                _.event(el, {
+                    // "click": function (e) {
+                    //     _this.show.call(_this)
+                    // },
+                    "keyup": function (e) {
+                        //录入文字
+
+                        var el = e.target;
+                        console.log(el.innerText)
+                        var keyCode = 0,
+                            e = e || event;
+                        keyCode = e.keyCode || e.which || e.charCode;
+                        console.log(keyCode)
+
+                        console.log(  String.fromCharCode(keyCode))
+
+                        // console.log(    _.base64.decode(keyCode))
+                      
+
+                        // if(keyCode===40){
+
+                        // }
+
+
+                        // if (el.innerText === el_text) return;
+                        el_text = el.innerText
+                        var data = _this.data.filter(function (t) {
+                            return t.key.indexOf(el.innerText) >= 0
+                        })
+
+                        _this.init(data)
+                        _this.show.call(_this)
+
+                    }
+                })
+                this.target = this.el;
+                _.shortcut({
+                    enter: this._enter.bind(this),
+                    downArrow: this._downArrow.bind(this),
+                    upArrow: this._upArrow.bind(this),
+                })
+            }
+            return _.createClass(Suggest, {
+                init: function (data) {
+
+                    var _this = this;
+                    var closeBtn = _.icon("x", {
+                        id: this.css.close
+                    }, {
+                        click: function (e) {
+                            _this.hide()
+                        }
+                    })
+                    var ul = _.ul(data.map(function (t) {
+                        return _.li([t.key, t.value], {
+                            "class": "item",
+                            key: t.key
+                        }, {
+                            click: function (e) {
+                                var el = e.target
+                                _.remove(el, "update")
+                                var target = _this.target;
+                                if (target) {
+                                    target.innerText = _.get(el, "key")
+                                    _.callEvent(target, "blur")
+                                    _.callEvent(target, "next")
+                                }
+                                _this.hide()
+                            }
+                        })
+                    }), {
+                        "class": "officecode"
+                    })
+
+                    _.empty(this.dialog)
+                    _.append(_.div([closeBtn, ul], {
+                        "class": "wrap"
+                    }), this.dialog)
+
+                },
+                show: function () {
+                    var el = this.el
+                    var dialog = this.dialog;
+                    var p = _.pos(el)
+                    _.css(dialog, {
+                        position: "absolute",
+                        top: p.y + p.height,
+                        left: p.x
+                    })
+                    this.setTarget(el)
+                    _.show(dialog)
+                },
+                hide: function () {
+                    _.hide(this.dialog)
+                },
+                isShow: function () {
+                    return _.isShow(this.dialog)
+                },
+                setTarget: function (el) {
+                    this.target = el
+                    _.set(this.dialog, "target", el.id)
+                },
+                // getTarget: function () {
+                //     var target = _.get(this.dialog, "target")
+                //     return _.query("#" + target)
+                // },
+                getActive: function () {
+                    return _.query("li[active]", this.dialog)
+                },
+                getActiveKey: function () {
+                    var li = this.getActive()
+                    return _.get(li, "key")||""
+                },
+                _enter: function (e) {
+                    var el = e.target;
+                    if (this.isShow()) {
+                        el.innerText = this.getActiveKey();
+                        this.hide()
+                    }
+                    if (_.closest(el, "." + this.el_css.group)) {
+                        e.preventDefault();
+                        // if (!el.innerText) return;
+                        // if (el.innerText) {
+                        //     _nextItem(el);
+                        // }
+                    }
+                },
+                _downArrow: function (e) {
+                    if (this.isShow()) {
+                        var li = this.getActive()
+                        // if (!li) {
+                        //     li = _.query("li", this.dialog)
+                        // }
+                        var nextLi = li ? li.nextSibling : _.query("li", this.dialog);
+                        _.remove(li, "active");
+                        _.set(nextLi, "active")
+                    }
+                },
+                _upArrow: function (e) {
+                    if (this.isShow()) {
+                        var li = this.getActive()
+                        // if (!li) {
+                        //     li = _.query("li", this.dialog)
+                        // }
+                        var preLi = li ? li.previousSibling : _.query("li:last-child", this.dialog)
+                        _.remove(li, "active");
+                        _.set(preLi, "active")
+                    }
+                }
+            })
+        });
+
+
+        _.suggest({
+            el: ".input-item",
+            data: officeCode
+        })
+
+
+        // var _suggestionDialog = function (el) {
+        //     var dialog = _.query(".suggest_wrapper")
+        //     var p = _.pos(el)
+        //     _.css(dialog, {
+        //         position: "absolute",
+        //         top: p.y + p.height,
+        //         left: p.x
+        //     })
+        //     _.set(dialog, "source", el.id)
+        //     _.show(dialog)
+        // }
+
+        //回车事件
+        // var _enter = function (e) {
+        //     var el = e.target;
+        //     var dialog = _.query(".suggest_wrapper")
+        //     if (_.isShow(dialog)) {
+        //         var li = _.query("li[active]", dialog)
+        //         el.innerText = _.get(li, "code")
+        //         _.hide(dialog)
+        //     }
+        //     if (_.closest(el, "." + cssname_item)) {
+        //         e.preventDefault();
+        //         // if (!el.innerText) return;
+        //         if (el.innerText) {
+        //             _nextItem(el);
+        //         }
+        //     }
+        // }
+        // var _focus = function (e) {
+        //     var el = e.target;
+        //     _.set(el, "update")
+        //     _suggestionDialog(el)
+        // }
+
+
+        // //控制dialog选择
+        // var _downArrow = function (e) {
+        //     var dialog = _.query(".suggest_wrapper")
+        //     if (_.isShow(dialog)) {
+        //         var li = _.query("li[active]", dialog) //li[active]
+        //         if (!li) {
+        //             li = _.query("li", dialog)
+        //         }
+        //         var nextLi = li.nextSibling;
+        //         _.remove(li, "active");
+        //         _.set(nextLi, "active")
+        //     }
+        // }
+        // var _upArrow = function (e) {
+        //     var dialog = _.query(".suggest_wrapper")
+        //     if (_.isShow(dialog)) {
+        //         var li = _.query("li[active]", dialog) //li[active]
+        //         if (!li) {
+        //             li = _.query("li", dialog)
+        //         }
+        //         var preLi = li.previousSibling
+        //         _.remove(li, "active");
+        //         _.set(preLi, "active")
+        //     }
+
+        // }
+    </script>
+</body>
+
+</html>
