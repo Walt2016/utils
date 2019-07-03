@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .test {
+            width: 50px;
+            height: 50px;
+            background: red;
+            border: 1px solid #ccc;
+
+        }
+
+        .btn {
+            border: 1px solid #ccc;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test"></div>
+    <div class="btn">next</div>
+    <div id="div"></div>
+
+    <script>
+        var elem = document.querySelector('#div');
+
+        var event = document.createEvent('Event');
+
+        // 定义事件名称myEvent
+        event.initEvent('myEvent', true, true);
+
+        // 监听myEvent
+        elem.addEventListener('myEvent', function (e) {
+            console.log(e);
+        }, false);
+
+        // 使用目标对象去派发事件，可以是元素节点/事件对象
+        elem.dispatchEvent(event);
+    </script>
+
+    <script src="utils.js"></script>
+    <script type="text/javascript">
+        //document上绑定自定义事件oneating  
+        document.addEventListener('eat', function (event) {
+            alert(event.mingzi + '，' + event.message);
+        }, false);
+
+        //创建event的对象实例。  
+        var event = document.createEvent('HTMLEvents');
+        // 3个参数：事件类型，是否冒泡，是否阻止浏览器的默认行为  
+        event.initEvent("eat", true, true);
+        /*属性，随便自己定义*/
+        event.mingzi = 'hello,我是李小贱';
+        event.message = '我今天24岁';
+
+        //触发自定义事件oneating  
+        // document.dispatchEvent(event);
+    </script>
+
+
+    <script>
+        var fireEvent = function (element, event) {
+            if (document.createEventObject) {
+                // IE浏览器支持fireEvent方法 
+                var evt = document.createEventObject();
+                return element.fireEvent('on' + event, evt)
+            } else {
+                // 其他标准浏览器使用dispatchEvent方法 
+                var evt = document.createEvent('HTMLEvents');
+                evt.initEvent(event, true, true);
+                return !element.dispatchEvent(evt);
+            }
+        };
+
+        var Event = (function () {
+            var clientList = {};
+            var listen,
+                trigger,
+                remove;
+            listen = function (key, fn) {
+                if (!clientList[key]) {
+                    clientList[key] = [];
+                }
+                clientList[key].push(fn);
+            };
+
+            trigger = function () {
+                var key = [].shift.call(arguments);
+                var fns = clientList[key];
+
+                if (!fns || fns.length === 0) {
+                    return false;
+                }
+
+                for (var i = 0, fn; fn = fns[i++];) {
+                    fn.apply(this, arguments);
+                }
+            };
+
+
+            remove = function (key, fn) {
+                var fns = clientList[key];
+
+                // key对应的消息没有被人订阅
+                if (!fns) {
+                    return false;
+                }
+
+                // 没有传入fn(具体的回调函数), 表示取消key对应的所有订阅
+                if (!fn) {
+                    fns && (fns.length = 0);
+                } else {
+                    // 反向遍历
+                    for (var i = fns.length - 1, _fn = fns[i]; i >= 0; i--) {
+                        if (_fn === fn) {
+                            // 删除订阅回调函数
+                            fns.splice(i, 1);
+                        }
+                    }
+                }
+            };
+
+            return {
+                listen: listen,
+                trigger: trigger,
+                remove: remove
+            }
+        }());
+
+        _package("event", _, function () {
+            function Event(events, el) {
+                if (!(this instanceof Event)) return new Event(events, el);
+                if (!el) {
+                    el = document;
+                }
+                this.el = el;
+                for (var type in events) {
+                    this.add(type, el, events[type])
+                }
+                //与dom无关事件
+                this.handlers = {}
+            }
+            return _.createClass(Event, {
+                // createEvent: function () {
+                //     var dom = document.querySelector('#id')
+                //     document.addEventListener('alert', function (event) {
+                //         console.log(event)
+                //     }, false);
+
+                //     // 创建
+                //     var evt = document.createEvent("HTMLEvents");
+                //     // 初始化
+                //     evt.initEvent("alert", false, false);
+
+                //     // 触发, 即弹出文字
+                //     dom.dispatchEvent(evt);
+                // },
+                //store events
+                store: function (type, listener) {
+                    var el = this.el;
+                    // if (!el.events) el.events = [];
+                    // el.events.push({
+                    //     type: type,
+                    //     el: el,
+                    //     listener: listener
+                    // }); //listener
+
+                    if (!el.events) {
+                        el.events = {}
+                    }
+                    if (typeof el.events[type] === "undefined") {
+                        el.events[type] = []
+                    }
+                    el.events[type].push(listener)
+
+                    // // this.handlers[type]=listener
+                    // if (typeof this.handlers[type] == 'undefined') this.handlers[type] = [];
+                    // this.handlers[type].push(handler);
+                },
+                //delete event
+                delStore: function (type, listener) {
+                    var el = this.el;
+                    // if (!el.events) {
+                    //     el.events = [];
+                    // }
+                    // var i = el.events.length;
+                    // while (i--) {
+                    //     if (el.events[i].type === type && el.events[i].listener === listener)
+                    //         el.events.splice(i, 1);
+                    // }
+                    if (!el.events) {
+                        el.events = {}
+                    }
+                    if (typeof el.events[type] === "undefined") {
+                        el.events[type] = []
+                    }
+                    var i = el.events[type].length;
+                    while (i--) {
+                        if (el.events[type][i] === listener) {
+                            el.events[type].splice(i, 1);
+                        }
+                    }
+
+
+                    //
+                    // if (!this.handlers[type]) return;
+                    // var handlers = this.handlers[type];
+                    // if (handler == undefined) {
+                    //     handlers.length = 0; //不传某个具体函数时，解绑所有
+                    // } else if (handlers.length) {
+                    //     for (var i = 0; i < handlers.length; i++) {
+                    //         if (handlers[i] == listener) {
+                    //             //解绑单个
+                    //             this.handlers[type].splice(i, 1);
+                    //         }
+                    //     }
+                    // }
+                },
+                //trigger
+                call: function (type) {
+                    var el = this.el;
+                    _.forEach(el.events[type], function (t) {
+                        t(el)
+                    })
+
+                    // _.forEach(el.events, function (t) {
+                    //     if (t.type === type) {
+                    //         t.listener(el)
+                    //     }
+                    // })
+
+                    // //fire
+                    // if (this.handlers[type] instanceof Array) {
+                    //     var handlers = this.handlers[type];
+                    //     //遍历事件函数监听的程序，依次执行
+                    //     for (var i = 0; i < handlers.length; i++) {
+                    //         handlers[i]();
+                    //     }
+                    // }
+                },
+                add: function (type, el, listener) {
+                    if (window.addEventListener) {
+                        el.addEventListener(type, listener, false);
+                    } else {
+                        el.attachEvent('on' + type, listener);
+                    }
+                    this.store(type, listener)
+                },
+                remove: function (type, el, listener) {
+                    if (window.removeEventListener) {
+                        el.removeEventListener(type, listener, {
+                            passive: false
+                        }); //false
+                    } else {
+                        el.detachEvent('on' + type, listener);
+                    }
+                    this.delStore(type, listener)
+                },
+                clear: function (type) {
+                    var el = this.el;
+                    var _this = this;
+                    for(var key in el.events){
+                        _.forEach(el.events[key], function (t) {
+                        if (type === "") {
+                            _this.remove(t.type, t.el, t.listener)
+                        } else {
+                            if (t.type === type) {
+                                _this.remove(t.type, t.el, t.listener)
+                            }
+                        }
+                    });
+
+                    }
+                    // el.events && _.forEach(el.events, function (t) {
+                    //     if (type === "") {
+                    //         _this.remove(t.type, t.el, t.listener)
+                    //     } else {
+                    //         if (t.type === type) {
+                    //             _this.remove(t.type, t.el, t.listener)
+                    //         }
+                    //     }
+
+                    // });
+                }
+
+            })
+        })
+
+        var el = _.query(".test")
+        var ev = _.event({
+            click: function (e) {
+                console.log(e.target)
+
+                console.log(_.pos(e))
+            },
+            //自定义事件
+            next: function (e) {
+                console.log(e)
+            }
+        }, el)
+
+        var btn = _.query(".btn")
+        _.event({
+            click: function () {
+
+                ev.call("next")
+                ev.call("click") //click()
+
+                // el.next()
+                // el.click()
+            }
+        }, btn)
+
+
+
+        var Event = {
+            _listeners: {},
+            // 添加
+            addEvent: function (type, fn) {
+                if (typeof this._listeners[type] === "undefined") {
+                    this._listeners[type] = [];
+                }
+                if (typeof fn === "function") {
+                    this._listeners[type].push(fn);
+                }
+                return this;
+            },
+            // 触发
+            fireEvent: function (type) {
+                var arrayEvent = this._listeners[type];
+                if (arrayEvent instanceof Array) {
+                    for (var i = 0, length = arrayEvent.length; i < length; i += 1) {
+                        if (typeof arrayEvent[i] === "function") {
+                            arrayEvent[i]({
+                                type: type
+                            });
+                        }
+                    }
+                }
+                return this;
+            },
+            // 删除
+            removeEvent: function (type, fn) {
+                var arrayEvent = this._listeners[type];
+                if (typeof type === "string" && arrayEvent instanceof Array) {
+                    if (typeof fn === "function") {
+                        // 清除当前type类型事件下对应fn方法
+                        for (var i = 0, length = arrayEvent.length; i < length; i += 1) {
+                            if (arrayEvent[i] === fn) {
+                                this._listeners[type].splice(i, 1);
+                                break;
+                            }
+                        }
+                    } else {
+                        // 如果仅仅参数type, 或参数fn邪魔外道，则所有type类型事件清除
+                        delete this._listeners[type];
+                    }
+                }
+                return this;
+            }
+        };
+
+        Event.addEvent("alert", function () {
+            alert("弹出！");
+        });
+
+        // 触发自定义alert事件
+        // Event.fireEvent("alert");
+
+        var EventTarget = function () {
+            this._listener = {};
+        };
+
+        EventTarget.prototype = {
+            constructor: this,
+            addEvent: function (type, fn) {
+                if (typeof type === "string" && typeof fn === "function") {
+                    if (typeof this._listener[type] === "undefined") {
+                        this._listener[type] = [fn];
+                    } else {
+                        this._listener[type].push(fn);
+                    }
+                }
+                return this;
+            },
+            addEvents: function (obj) {
+                obj = typeof obj === "object" ? obj : {};
+                var type;
+                for (type in obj) {
+                    if (type && typeof obj[type] === "function") {
+                        this.addEvent(type, obj[type]);
+                    }
+                }
+                return this;
+            },
+            fireEvent: function (type) {
+                if (type && this._listener[type]) {
+                    var events = {
+                        type: type,
+                        target: this
+                    };
+
+                    for (var length = this._listener[type].length, start = 0; start < length; start += 1) {
+                        this._listener[type][start].call(this, events);
+                    }
+                }
+                return this;
+            },
+            fireEvents: function (array) {
+                if (array instanceof Array) {
+                    for (var i = 0, length = array.length; i < length; i += 1) {
+                        this.fireEvent(array[i]);
+                    }
+                }
+                return this;
+            },
+            removeEvent: function (type, key) {
+                var listeners = this._listener[type];
+                if (listeners instanceof Array) {
+                    if (typeof key === "function") {
+                        for (var i = 0, length = listeners.length; i < length; i += 1) {
+                            if (listeners[i] === key) {
+                                listeners.splice(i, 1);
+                                break;
+                            }
+                        }
+                    } else if (key instanceof Array) {
+                        for (var lis = 0, lenkey = key.length; lis < lenkey; lis += 1) {
+                            this.removeEvent(type, key[lenkey]);
+                        }
+                    } else {
+                        delete this._listener[type];
+                    }
+                }
+                return this;
+            },
+            removeEvents: function (params) {
+                if (params instanceof Array) {
+                    for (var i = 0, length = params.length; i < length; i += 1) {
+                        this.removeEvent(params[i]);
+                    }
+                } else if (typeof params === "object") {
+                    for (var type in params) {
+                        this.removeEvent(type, params[type]);
+                    }
+                }
+                return this;
+            }
+        };
+    </script>
+</body>
+
+</html>

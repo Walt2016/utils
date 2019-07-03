@@ -164,33 +164,36 @@
                     // },
                     "keyup": function (e) {
                         //录入文字
-
                         var el = e.target;
                         console.log(el.innerText)
                         var keyCode = 0,
                             e = e || event;
                         keyCode = e.keyCode || e.which || e.charCode;
                         console.log(keyCode)
+                        console.log(String.fromCharCode(keyCode))
 
-                        console.log(  String.fromCharCode(keyCode))
+                        if(keyCode==13){
+                            if(_this.isShow()){
+                                _this.hide()
+                            }else{
+                                _this.show(el)
+                            }
+                        }
 
-                        // console.log(    _.base64.decode(keyCode))
-                      
-
-                        // if(keyCode===40){
-
-                        // }
 
 
-                        // if (el.innerText === el_text) return;
-                        el_text = el.innerText
+                        el_text = _.trim(el.innerText)
+                        if([13,37,38,39,40].indexOf(keyCode)>=0){
+                            return
+                        }
                         var data = _this.data.filter(function (t) {
                             return t.key.indexOf(el.innerText) >= 0
                         })
 
-                        _this.init(data)
-                        _this.show.call(_this)
-
+                        if (data.length > 0) {
+                            _this.init(data)
+                            _this.show.call(_this)
+                        }
                     }
                 })
                 this.target = this.el;
@@ -258,6 +261,7 @@
                 },
                 setTarget: function (el) {
                     this.target = el
+                    //log
                     _.set(this.dialog, "target", el.id)
                 },
                 // getTarget: function () {
@@ -269,7 +273,7 @@
                 },
                 getActiveKey: function () {
                     var li = this.getActive()
-                    return _.get(li, "key")||""
+                    return _.get(li, "key") || ""
                 },
                 _enter: function (e) {
                     var el = e.target;
@@ -288,9 +292,6 @@
                 _downArrow: function (e) {
                     if (this.isShow()) {
                         var li = this.getActive()
-                        // if (!li) {
-                        //     li = _.query("li", this.dialog)
-                        // }
                         var nextLi = li ? li.nextSibling : _.query("li", this.dialog);
                         _.remove(li, "active");
                         _.set(nextLi, "active")
@@ -299,9 +300,6 @@
                 _upArrow: function (e) {
                     if (this.isShow()) {
                         var li = this.getActive()
-                        // if (!li) {
-                        //     li = _.query("li", this.dialog)
-                        // }
                         var preLi = li ? li.previousSibling : _.query("li:last-child", this.dialog)
                         _.remove(li, "active");
                         _.set(preLi, "active")
