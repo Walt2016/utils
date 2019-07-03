@@ -170,7 +170,7 @@
             cursor: pointer;
         }
 
-        #dialog_officecode_close:hover{
+        #dialog_officecode_close:hover {
             background: #eee
         }
 
@@ -205,7 +205,7 @@
 
     </div>
     <div class="hide" id="dialog_officecode">
-       
+
     </div>
     <script src="utils.js"></script>
     <script>
@@ -256,15 +256,15 @@
             }
         ]
 
-       var closeBtn= _.icon("x",{
-           id:"dialog_officecode_close"
-       },{
-            click:function(e){
+        var closeBtn = _.icon("x", {
+            id: "dialog_officecode_close"
+        }, {
+            click: function (e) {
                 var dialog = _.query("#dialog_officecode")
                 _.hide(dialog)
             }
         })
-        var ul=_.ul(officeCode.map(function (t) {
+        var ul = _.ul(officeCode.map(function (t) {
             return _.li([t.code, t.office], {
                 "class": "item",
                 code: t.code
@@ -274,23 +274,22 @@
                     var el = e.target
                     _.remove(el, "update")
                     var source = _.get(dialog, "source")
-                    source=_.query("#" + source)
+                    source = _.query("#" + source)
 
                     source.innerText = _.get(el, "code")
                     _.hide(dialog)
-                    
-                    _.callEvent(source,"blur")
-                    _.callEvent(source,"next")
-                  
+
+                    var evt = _.event(source);
+                    evt.fire("blur").fire("next")
                 }
             })
         }), {
             "class": "officecode"
         })
 
-        _.append(_.div([closeBtn,ul],{
-            "class":"wrap"
-        }), "#dialog_officecode")
+        _.append("#dialog_officecode",_.div([closeBtn, ul], {
+            "class": "wrap"
+        }))
 
 
         var filterBlocks = [{
@@ -652,7 +651,7 @@
                 }
             }
         })
-        _.append([select, ul, tbn], ".nav")
+        _.append(".nav",[select, ul, tbn])
         var _block = function (block) {
             var title = _.div(block.label, {
                 "class": "title"
@@ -725,7 +724,7 @@
                 id: blockId
             })
 
-            _.append(wrap, ".blockList")
+            _.append(".blockList",wrap)
 
         }
         var _submitBtn = function () {
@@ -775,7 +774,7 @@
                     }
 
                     _.empty(".result")
-                    _.append([range, list], ".result")
+                    _.append(".result",[range, list])
                 }
             })
 
@@ -791,25 +790,27 @@
             var btnGroup = _.div([btn, btn2], {
                 "class": "btn-group"
             })
-            _.append(btnGroup, ".blockList")
+            _.append(".blockList",btnGroup)
         }
         var saveWorkfile = _.query("#saveWorkfile")
-        _.addEvent("click", saveWorkfile, function () {
-            var dialog = _.query("#dialog")
-            var name = _.query("input", dialog).value
+        _.event(saveWorkfile, {
+            click: function () {
+                var dialog = _.query("#dialog")
+                var name = _.query("input", dialog).value
 
-            _.hide(dialog)
+                _.hide(dialog)
 
-            var workfile = _.storage.get("workfile");
-            if (workfile) {
-                workfile.push({
-                    label: name
-                })
-                console.log(workfile)
-                _.storage.set("workfile", workfile)
-                _.replace(select, _select())
-            } else {
-                _.storage.set("workfile", subject)
+                var workfile = _.storage.get("workfile");
+                if (workfile) {
+                    workfile.push({
+                        label: name
+                    })
+                    console.log(workfile)
+                    _.storage.set("workfile", workfile)
+                    _.replace(select, _select())
+                } else {
+                    _.storage.set("workfile", subject)
+                }
             }
         })
     </script>

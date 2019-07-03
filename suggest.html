@@ -225,8 +225,8 @@
                                 var target = _this.target;
                                 if (target) {
                                     target.innerText = _.get(el, "key")
-                                    _.callEvent(target, "blur")
-                                    _.callEvent(target, "next")
+                                    var evt=_.event(target)
+                                    evt.fire("blur").fire("next")
                                 }
                                 _this.hide()
                             }
@@ -236,9 +236,9 @@
                     })
 
                     _.empty(this.dialog)
-                    _.append(_.div([closeBtn, ul], {
+                    _.append( this.dialog,_.div([closeBtn, ul], {
                         "class": "wrap"
-                    }), this.dialog)
+                    }))
 
                 },
                 show: function () {

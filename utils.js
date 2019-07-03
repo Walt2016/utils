@@ -74,72 +74,69 @@ _package("_", this, function () {
             }
             return obj;
         },
-        addEvent: function (type, el, listener) {
-            if (arguments.length === 2 && _.type(arguments[1]) === "function") {
-                el = window;
-                listener = arguments[1]
-            }
+        // addEvent: function (type, el, listener) {
+        //     var events = {}
+        //     events[type] = listener
+        //     _.event(events, el)
+        //     // if (arguments.length === 2 && _.type(arguments[1]) === "function") {
+        //     //     el = window;
+        //     //     listener = arguments[1]
+        //     // }
 
-            if (window.addEventListener) {
-                el.addEventListener(type, listener, false);
-            } else {
-                el.attachEvent('on' + type, listener);
-            }
-            //store events
-            if (!el.events) el.events = [];
+        //     // if (window.addEventListener) {
+        //     //     el.addEventListener(type, listener, false);
+        //     // } else {
+        //     //     el.attachEvent('on' + type, listener);
+        //     // }
+        //     // //store events
+        //     // if (!el.events) el.events = [];
 
-            el.events.push({
-                type: type,
-                el: el,
-                listener: listener
-            }); //listener
-        },
-        removeEvent: function (type, el, listener) {
-            //  console.log(typeof el)   
-            // if (!_.isElement(el)) return false;
-            if (listener) {
-                if (window.removeEventListener) {
-                    el.removeEventListener(type, listener, {
-                        passive: false
-                    }); //false
-                } else {
-                    el.detachEvent('on' + type, listener);
-                }
-                //delete event
-                if (!el.events) {
-                    el.events = [];
-                }
-                var i = el.events.length;
-                while (i--) {
-                    if (el.events[i].type === type && el.events[i].listener === listener) el.events.splice(i, 1);
-                }
-            } else {
-                el.events && _.forEach(el.events, function (t) {
-                    if (type === "") {
-                        _.removeEvent(t.type, t.el, t.listener)
-                    } else {
-                        if (t.type === type) {
-                            _.removeEvent(t.type, t.el, t.listener)
-                        }
-                    }
+        //     // el.events.push({
+        //     //     type: type,
+        //     //     el: el,
+        //     //     listener: listener
+        //     // }); //listener
+        // },
+        // removeEvent: function (type, el, listener) {
+        //     //  console.log(typeof el)   
+        //     // if (!_.isElement(el)) return false;
+        //     // if (listener) {
+        //     //     if (window.removeEventListener) {
+        //     //         el.removeEventListener(type, listener, {
+        //     //             passive: false
+        //     //         }); //false
+        //     //     } else {
+        //     //         el.detachEvent('on' + type, listener);
+        //     //     }
+        //     //     //delete event
+        //     //     if (!el.events) {
+        //     //         el.events = [];
+        //     //     }
+        //     //     var i = el.events.length;
+        //     //     while (i--) {
+        //     //         if (el.events[i].type === type && el.events[i].listener === listener) el.events.splice(i, 1);
+        //     //     }
+        //     // } else {
+        //     //     el.events && _.forEach(el.events, function (t) {
+        //     //         if (type === "") {
+        //     //             _.removeEvent(t.type, t.el, t.listener)
+        //     //         } else {
+        //     //             if (t.type === type) {
+        //     //                 _.removeEvent(t.type, t.el, t.listener)
+        //     //             }
+        //     //         }
 
-                });
-            }
-        },
-        callEvent: function (el, type) {
-            _.forEach(el.events, function (t) {
-                if (t.type === type) {
-                    t.listener(el)
-                }
-            })
-        },
-        event: function (el, events) {
-            for (var key in events) {
-                _.addEvent(key, el, function (e) {
-                    events[key].call(el, e)
-                })
-            }
-        },
+        //     //     });
+        //     // }
+        // },
+        //fire
+        // callEvent: function (el, type) {
+        //     // el && el.events && _.forEach(el.events[type], function (t) {
+        //     //     t(el)
+        //     // })
+
+        //     _.evnt(el).fire(type)
+        // },
         //快捷键  全局键盘事件
         shortcut: function (events) { //ele, key, callback
             var keycodeMap = {
@@ -174,13 +171,20 @@ _package("_", this, function () {
             //     callback(e)
             // }
 
-            _.removeEvent("keydown", document); //先删除   ，最后绑定一次有效
-            _.addEvent("keydown", document, _shortcut)
+            // _.removeEvent("keydown", document); //先删除   ，最后绑定一次有效
+            // _.addEvent("keydown", document, _shortcut)
+            _.event(document, {
+                keydown: _shortcut,
+            })
         },
         //全局鼠标事件
         globalClick: function (callback) {
-            _.removeEvent("click", document); //先删除   ，最后绑定一次有效
-            _.addEvent("click", document, callback)
+            // _.removeEvent("click", document); //先删除   ，最后绑定一次有效
+            // _.addEvent("click", document, callback)
+
+            _.event(document, {
+                click: callback,
+            })
         },
         isDOM: function (obj) {
             if (typeof HTMLElement === 'object') {
@@ -276,8 +280,14 @@ _package("_", this, function () {
             }
             return document.querySelector(selectors)
         },
-        append: function (child, el) {
-            var _append = function (child, el) {
+        append: function (el, child) {
+            var _createTextNode = function (t) {
+                if (_.indexOf(["string", "number", "date"], _.type(t)) >= 0) {
+                    t = document.createTextNode(t)
+                }
+                return t
+            }
+            var _append = function (el, child) {
                 if (_.type(child) === "array") {
                     _.forEach(child, function (t) {
                         t = _createTextNode(t)
@@ -289,27 +299,23 @@ _package("_", this, function () {
                 }
                 return el
             }
-            var _createTextNode = function (t) {
-                if (_.indexOf(["string", "number", "date"], _.type(t)) >= 0) {
-                    t = document.createTextNode(t)
-                }
-                return t
-            }
             if (!el) {
                 el = document.body
             } else if (_.type(el) === "string") {
                 el = _.query(el)
             }
-            return _append(child, el)
+            return _append(el, child)
         },
-        replace: function (ele, newEle) {
-            ele.parentNode.replaceChild(newEle, ele)
+        replace: function (el, newEl) {
+            el.parentNode.replaceChild(newEl, el)
+            return el;
         },
         empty: function (el) {
             if (_.type(el) === "string") {
                 el = _.query(el)
             }
             el.innerText = "";
+            return el;
         },
         get: function (el, prop) {
             if (!el) return;
@@ -324,25 +330,28 @@ _package("_", this, function () {
             }
             return el.getAttribute(prop)
         },
-        //IE6/7不支持setAttribute('class',xxx)方式设置元素的class。 
         set: function (el, key, val) {
             if (!el) return;
-            if (key === "class") {
-                el.className = val
-            } else {
-                el.setAttribute(key, val || "")
+            var _set = function (el, key, val) {
+                if (key === "class") { //IE6/7不支持setAttribute('class',xxx)方式设置元素的class。 
+                    el.className = val || ""
+                } else {
+                    el.setAttribute(key, val || "")
+                }
             }
-            // var tag = el.tagName;
-            // var _set = function (key, val) {
-            //     if (tag.toLowerCase() === "input" && key === "checked") {
-            //         if (val) {
-            //             ele.setAttribute(key, val)
-            //         }
-            //     } else {
-            //         ele.setAttribute(key, val)
-            //     }
-            // }
-            // _set(key, val)
+            var len = arguments.length
+            if (len === 3) {
+                _set(el, key, val)
+            } else if (len == 2) {
+                if (_.type(key) === "object") {
+                    var options = key
+                    for (var k in options) {
+                        _set(el, k, options[k])
+                    }
+                } else {
+                    _set(el, key, "")
+                }
+            }
         },
         has: function (el, prop) {
             return el.hasAttribute(prop)
@@ -352,7 +361,7 @@ _package("_", this, function () {
             var _remove = function (el, prop) {
                 if (prop) {
                     el.removeAttribute(prop)
-                } else {
+                } else if (_.isDOM(el)) {
                     el.parentNode.removeChild(el)
                 }
             }
@@ -366,6 +375,7 @@ _package("_", this, function () {
         },
         //兼容IE ，nodeList.forEach
         forEach: function (arr, callback) {
+            if (!arr) return;
             for (var i = 0; i < arr.length; i++) {
                 callback(arr[i])
             }
@@ -502,7 +512,7 @@ _package("_", this, function () {
         createEle: function (tag, text, props, events) {
             var _createEle = function (tag, text) {
                 var ele = document.createElement(tag)
-                return _.append(text, ele);
+                return _.append(ele, text);
             }
             var _appendProps = function (ele, props) {
                 for (var key in props) {
@@ -517,13 +527,6 @@ _package("_", this, function () {
                 }
                 return ele;
             }
-            var _appendEvents = function (ele, events) {
-                for (var key in events) {
-                    _.addEvent(key, ele, events[key]);
-                }
-                return ele;
-            }
-
             // var i = tag.indexOf(" ");
             // if (i > 0) {
             //     var leftTag = tag.substring(0, i)
@@ -585,16 +588,16 @@ _package("_", this, function () {
                     }
                     if (i + 1 == len) { //last child
                         tmp = _createEle(t, text)
-                        _.append(tmp, parent)
+                        _.append(parent, tmp)
                     }
                     if (i > 0 && i < len) {
-                        _.append(tmp, parent)
+                        _.append(parent, tmp)
                         parent = tmp
                     }
                 })
             }
             _appendProps(ele, props);
-            _appendEvents(ele, events);
+            _.event(ele, events)
             return ele;
         },
         btn: function (text, props, events) {
@@ -806,14 +809,14 @@ _package("_", this, function () {
                 var el = e.target || e;
                 // if (!_.has(el, "update") && el.innerText) {
                 _.remove(el, "contenteditable");
-                _.append(_.icon("x", {}, {
+                _.append(el, _.icon("x", {}, {
                     click: function () {
                         _.remove(el)
                         if (_.queryAll("." + cssname_item, inputGroup).length == 0) {
                             _.append(_item(_id(0)), inputGroup)
                         }
                     }
-                }), el)
+                }))
                 // }
                 // var dialog=_.query("#dialog_officecode")
                 // _.hide(dialog)
@@ -842,7 +845,7 @@ _package("_", this, function () {
                 if (!next) { //创建新输入框
                     next = _item(nextId)
                     var group = _.closest(el, "." + cssname_group)
-                    _.append(next, group)
+                    _.append(group, next)
                 }
                 _beUpdate(next)
                 _beActive(next)
@@ -1073,7 +1076,11 @@ _package("_", this, function () {
             _.addClass(el, "hide")
         },
         click: function (el, callback) {
-            _.addEvent("click", el, callback)
+            // _.addEvent("click", el, callback)
+
+            _.event({
+                click: callback
+            }, el)
         },
         hasClass: function (el, cls) {
             var arr = el.className.split(" ")
@@ -1154,8 +1161,125 @@ _package("pos", _, function () {
                 return pos;
             }
             return _pos(el);
-
         }
+    })
+});
+
+
+//事件
+_package("event", _, function () {
+    function Event(el, events) {
+        if (!(this instanceof Event)) return new Event(el, events);
+        if (!el) {
+            el = document;
+        }
+        this.el = el;
+        if (!el.events) el.events = {}
+        this.handlers = el.events
+        if (_.type(events) === "object") {
+            for (var type in events) {
+                this.add(type, events[type])
+            }
+        }
+    }
+    return _.createClass(Event, {
+        // createEvent: function () {
+        //     var dom = document.querySelector('#id')
+        //     document.addEventListener('alert', function (event) {
+        //         console.log(event)
+        //     }, false);
+
+        //     // 创建
+        //     var evt = document.createEvent("HTMLEvents");
+        //     // 初始化
+        //     evt.initEvent("alert", false, false);
+
+        //     // 触发, 即弹出文字
+        //     dom.dispatchEvent(evt);
+        // },
+        //进行基于 DOM 的数据存储
+        //store events
+        store: function (type, listener) {
+            var handlers = this.handlers;
+            if (typeof handlers[type] === "undefined") {
+                handlers[type] = []
+            }
+            handlers[type].push(listener)
+        },
+        //delete event
+        delStore: function (type, listener) {
+            var handlers = this.handlers;
+            if (typeof handlers[type] === "undefined") {
+                handlers[type] = []
+            }
+            if (listener == undefined) {
+                handlers[type].length = 0;
+            } else {
+                var i = handlers[type].length;
+                while (i--) {
+                    if (handlers[type][i] === listener) {
+                        handlers[type].splice(i, 1);
+                    }
+                }
+            }
+        },
+        //trigger fire
+        fire: function (type) {
+            var el = this.el;
+            var handlers = this.handlers;
+            var _fire = function (type) {
+                _.forEach(handlers[type], function (t) {
+                    t(el)
+                })
+            }
+            if (_.type(type) === "array") {
+                _.forEach(type, function (typ) {
+                    _.forEach(handlers[typ], function (t) {
+                        t(el)
+                    })
+                })
+            } else {
+                _fire(type)
+            }
+            return this;
+        },
+        add: function (type, listener) {
+            var el = this.el;
+            if (window.addEventListener) {
+                el.addEventListener(type, listener, false);
+            } else {
+                el.attachEvent('on' + type, listener);
+            }
+            this.store(type, listener)
+        },
+        remove: function (type, listener) {
+            var el = this.el;
+            if (window.removeEventListener) {
+                el.removeEventListener(type, listener, {
+                    passive: false
+                }); //false
+            } else {
+                el.detachEvent('on' + type, listener);
+            }
+            this.delStore(type, listener)
+        },
+        clear: function (type) {
+            var el = this.el
+            var handlers = this.handlers;
+            var _this = this;
+            for (var key in handlers) {
+                _.forEach(handlers[key], function (t) {
+                    if (type === "") {
+                        _this.remove(t.type, t.listener)
+                    } else {
+                        if (t.type === type) {
+                            _this.remove(t.type, t.listener)
+                        }
+                    }
+                });
+            }
+        }
+
     })
 });
 
@@ -1582,6 +1706,7 @@ _package("grid", _, function () {
             var tfoot = this.tfoot;
             var tname = this.tname;
             var optPanel = this._optPanel();
+            var fixedfoot = this.config.fixedfoot;
             switch (this.outputType) {
                 case "colgroup":
                     return colgroup;
@@ -1597,6 +1722,29 @@ _package("grid", _, function () {
                     break;
                 case "fixedhead":
                     var cols = colgroup
+                    if (fixedfoot) { //表尾固定
+                        return _.div([
+                            _.div(_.table([cols, thead], {
+                                tablename: tname
+                            }), {
+                                "class": "table-fixed-head"
+                            }),
+                            _.div(_.table([cols.cloneNode(true), tbody], {
+                                tablename: tname
+                            }), {
+                                "class": "table-fixed-body"
+                            }),
+                            _.div(_.table([cols.cloneNode(true), tfoot], {
+                                tablename: tname
+                            }), {
+                                "class": "table-fixed-foot"
+                            })
+                        ], {
+                            "class": "dataintable",
+                            tablename: tname
+                        })
+
+                    }
                     return _.div([
                         _.div(_.table([cols, thead], {
                             tablename: tname
@@ -1643,6 +1791,10 @@ _package("grid", _, function () {
             if (config.check) colgroup.unshift(_.col("", {
                 style: "width: 5%;"
             }));
+            // //滚动条占位
+            // colgroup.push(_.col("", {
+            //     style: "width: 40px;"
+            // }));
             return _.colgroup(colgroup)
         },
         _row: function (r, i) {
@@ -1743,6 +1895,8 @@ _package("grid", _, function () {
                     _this.selectAll(e.target)
                 }
             }));
+            //滚动条占位
+            // thead.push(_.th(""))
             return _.thead(thead, {}, {
                 click: function (e) {
                     _this.avtiveCol(e.target)
@@ -1759,15 +1913,13 @@ _package("grid", _, function () {
             var tbl = this.tbl;
             var props = this.props;
             var tfoot = [];
+            //代替  Array.fill
             for (var i = 0; i < offset; i++) {
                 tfoot.push("")
             }
             this.tfoot = tfoot.concat(typs).map(function (t, i) {
                 return i === 0 ? "合计" : t === "number" ? 0 : "";
             });
-            // this.tfoot = new Array(offset).fill("").concat(typs).map(function (t, i) {
-            //     return i === 0 ? "合计" : t === "number" ? 0 : "";
-            // });
             var tbody =
                 count === 0 ? _.createEle("tr td", "未查到记录", {
                     colspan: tbl.length + offset
@@ -1782,6 +1934,8 @@ _package("grid", _, function () {
                     prop: i >= offset ? props[i - offset] : ""
                 });
             }) : "";
+            //滚动条占位
+            // this.tfoot.push(_.td(""))
             this.tfoot = _.tfoot(this.tfoot);
             return _.tbody(tbody, {}, {
                 click: function (e) {
@@ -1793,15 +1947,15 @@ _package("grid", _, function () {
         _sort: function (el) {
             var _this = this;
             var th = _.closest(el, "th")
-            var prop = th.getAttribute("prop");
-            var seq = th.getAttribute("seq")
-            var typ = th.getAttribute("class")
+            var prop = _.get(th, "prop");
+            var seq = _.get(th, "seq")
+            var typ = _.get(th, "class")
             var ths = _.queryAll("th[seq]", _this.grid)
             _.forEach(ths, function (t) {
-                if (t.getAttribute("prop") !== prop)
-                    t.setAttribute("seq", "")
+                if (_.get(t, "prop") !== prop)
+                    _.set(t, "seq", "")
             })
-            th.setAttribute("seq", seq === "asc" ? "desc" :
+            _.set(th, "seq", seq === "asc" ? "desc" :
                 "asc")
             _this.rs.sort(_.sortBy(prop, seq === "asc", typ))
             var tbody = _this._tbody();
@@ -1817,13 +1971,12 @@ _package("grid", _, function () {
                     var cbs = _.queryAll(
                         "tbody input[type='checkbox']:checked",
                         table);
-                    var tablename = table.getAttribute("tablename")
-                    // var sql=""
+                    var tablename = _.get(table, "tablename")
                     var sqls = []
                     _.forEach(cbs, function (t) {
                         //  sql=`delete from ${tablename} where id=`
                         var tr = _.closest(t, "tr")
-                        var rowid = tr.getAttribute("rowid")
+                        var rowid = _.get(tr, "rowid")
                         sqls.push({
                             tbl: tbl,
                             // sql: `delete from ${tablename} where rowid=${rowid}`
@@ -1850,7 +2003,7 @@ _package("grid", _, function () {
         },
         selectAll: function (el) {
             var tbody = _.query("tbody", this.grid);
-            if (el.nodeName.toLowerCase() === "input" && el.getAttribute("type") === "checkbox") {
+            if (el.nodeName.toLowerCase() === "input" && _.get(el, "type") === "checkbox") {
                 //全选
                 var inputs = _.queryAll("input[type='checkbox']", tbody);
                 inputs && _.forEach(inputs, function (t) {
@@ -1861,38 +2014,46 @@ _package("grid", _, function () {
         avtiveCol: function (el) {
             this.inactiveCell()
             var th = _.closest(el, "th");
-            var prop = th.getAttribute("prop");
+            var prop = _.get(th, "prop");
             var tds = _.queryAll("td[prop='" + prop + "']", this.grid);
             tds && _.forEach(tds, function (t) {
-                t.setAttribute("active", "")
+                _.set(t, "active", "")
             })
         },
         activeCell: function (el) {
             this.inactiveCell()
             var td = _.closest(el, "td");
             if (td && ["string", "number"].indexOf(td.className) >= 0)
-                td.setAttribute("active", "");
+                _.set(td, "active", "");
         },
         inactiveCell: function () {
             var td = _.queryAll("td[active]", this.grid);
             td && _.forEach(td, function (t) {
-                t.removeAttribute("active")
+                _.remove(t, "active")
             })
         },
         activeRow: function (el) {
             var oldTr = _.query("tr[active]", this.grid);
-            oldTr && oldTr.removeAttribute("active")
+            oldTr && _.remove(oldTr, "active")
             var tr = _.closest(el, "tr");
-            tr && tr.setAttribute("active", "");
+            tr && _.set(tr, "active", "");
         },
         activeGrid: function (el) {
             var table = _.query("table[active]")
-            table && table.removeAttribute("active")
-            this.grid.setAttribute("active", "");
+            table && _.remove(table, "active")
+            _.set(this.grid, "active", "");
         },
         //快捷键
         shortcut: function () {
-            document.onkeydown = function (event) {
+            //选择grid
+            document.body.onclick = function (e) {
+                var el = e.target;
+                var oldGrid = _.query(".dataintable[active]")
+                _.remove(oldGrid, "active")
+                var grid = _.closest(el, ".dataintable")
+                _.set(grid, "active", "")
+            };
+            document.onkeydown = function (e) {
                 var grid = _.query(".dataintable[active]")
                 var keyCode = 0,
                     e = e || event;
@@ -1900,9 +2061,13 @@ _package("grid", _, function () {
                 switch (keyCode) {
                     case 13: // enter 键
                         var cell = _.query("td[active]", grid)
-                        var input = _.query("input", cell)
-                        cell.innerText = input.value;
-                        cell.removeAttribute("update")
+                        // var input = _.query("input", cell)
+                        var input = _.query("div[contenteditable]", cell)
+                        if (cell && input) {
+                            cell.innerText = input.innerText
+                        }
+                        // cell.innerText = input.value;
+                        _.remove(cell, "update")
                         break;
                     case 27: // 按 Esc 
 
@@ -1910,18 +2075,20 @@ _package("grid", _, function () {
                     case 37: //左箭头
                         var cell = _.query("td[active]", grid)
                         if (!cell) return;
-                        if (cell.hasAttribute("update")) {
+                        if (_.has(cell, "update")) {
                             return
                         }
                         var val = cell.innerText
-                        var prop = cell.getAttribute("prop")
-                        console.log(val)
-                        var input = _.input(val, {
+                        var prop = _.get(cell, "prop")
+                        // var input = _.input(val, {
+                        //     name: prop
+                        // })
+                        var input = _.divInput(val, {
                             name: prop
                         })
                         cell.innerText = "";
-                        cell.appendChild(input)
-                        cell.setAttribute("update", "")
+                        _.append(cell, input)
+                        _.set(cell, "update", "")
                         setTimeout(function () {
                             input.focus();
                             input.value = '';
@@ -1931,37 +2098,37 @@ _package("grid", _, function () {
                     case 38: //上箭头
                         var tr = _.query("tr[active]", grid)
                         if (!tr) return;
-                        var rowid = tr.getAttribute("rowid");
+                        var rowid = _.get(tr, "rowid");
 
                         var cell = _.query("td[active]", grid)
-                        var prop = cell.getAttribute("prop")
+                        var prop = _.get(cell, "prop")
 
-                        tr.removeAttribute("active")
-                        cell.removeAttribute("active")
+                        _.remove(tr, "active")
+                        _.remove(cell, "active")
 
 
                         var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
                         if (newRow) {
-                            newRow.setAttribute("active", "")
+                            _.set(newRow, "active", "")
                             var newCell = _.query("td[prop='" + prop + "']", newRow)
-                            newCell.setAttribute("active", "")
+                            _.set(newCell, "active", "")
                         }
                         break;
                     case 40: //下箭头
                         var tr = _.query("tr[active]", grid)
                         if (!tr) return;
-                        var rowid = tr.getAttribute("rowid");
+                        var rowid = _.get(tr, "rowid");
 
                         var cell = _.query("td[active]", grid)
-                        var prop = cell.getAttribute("prop")
+                        var prop = _.get(cell, "prop")
 
-                        tr.removeAttribute("active")
-                        cell.removeAttribute("active")
+                        _.remove(tr, "active")
+                        _.remove(cell, "active")
                         var newRow = tr.nextSibling;
                         if (newRow) {
-                            newRow.setAttribute("active", "")
+                            _.set(newRow, "active", "")
                             var newCell = _.query("td[prop='" + prop + "']", newRow)
-                            newCell.setAttribute("active", "")
+                            _.set(newCell, "active", "")
                         }
 
                         break;
@@ -3925,7 +4092,7 @@ _package("storage", _, function () {
                         })
                         hideInput.addBehavior("#default#userData");
                         this.userData = hideInput;
-                        _.append(hideInput)
+                        _.append(document.body, hideInput)
                     } catch (e) {
                         console.log(e)
                         return false

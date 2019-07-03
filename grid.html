@@ -15,35 +15,11 @@
     <div class="table"></div>
     <script src="utils.js"></script>
     <script>
-       
-        //  var d=   _.div("trst",{
-        //         class:"btn"
-        //     },{
-        //         click:function(e){
-        //             var target=e.target;
-        //             console.log(target)
-        //         }
-        //     })
-
-        //     _.query(".test").appendChild(d)
-        // var ul={
-        //     tag:ul,
-        //     child:{
-
-        //     }
-
-        // }
-
-        //   ' ul>li>[i,span{"test"}]' 
-
-
-
-        // _.ele("ul li[i.icon span]")
-        var wrap = _.query(".wrap")
-        var ul = _.ul(_.li([_.i("", {
-            class: "iocn"
-        }), _.span("test")]))
-        wrap.appendChild(ul)
+        // var wrap = _.query(".wrap")
+        // var ul = _.ul(_.li([_.i("", {
+        //     class: "iocn"
+        // }), _.span("test")]))
+        // wrap.appendChild(ul)
 
         // _.template({
         //     el:".template",
@@ -121,7 +97,7 @@
         //     ]
         // })
 
-        var g = _.grid({
+        var data={
             tname: "成绩单",
             tbl: [{
                     prop: "id",
@@ -185,72 +161,23 @@
             //         dim_type: "222"
             //     }
             // ]
-        })
-
-        // console.log(g)
-        _.query(".table").appendChild(g)
+        }
 
 
+        var g = _.grid(data)
 
-        var g2 = _.grid({
-            tname: "成绩单",
-            tbl: [{
-                    prop: "id",
-                    label: "学号",
-                    type: "string",
-                    pk: true
-                },
-                {
-                    prop: "name",
-                    label: "姓名",
-                    type: "string"
-                },
+        _.append(".table",g)
 
-                {
-                    prop: "score",
-                    label: "成绩",
-                    type: "number"
-                }
-            ],
-            rs: [{
-                    id: 10,
-                    name: "小王",
-                    score: 100
-                },
-                {
-                    id: 11,
-                    name: "老李",
-                    score: 80
-                },
-                {
-                    id: 16,
-                    name: "大刘",
-                    score: 38
-                },
-                {
-                    id: 199,
-                    name: "小小孙",
-                    score: 99
-                }
-            ],
-            // showTFoot:false
-            // rs: [1, 2, 3, 4]
-            // rs: [{
-            //         dim_id: 1,
-            //         dim_name: "22",
-            //         dim_level: "22",
-            //         dim_type: "222"
-            //     },
-            //     {
-            //         dim_id: 1,
-            //         dim_name: "哈哈哈",
-            //         dim_level: "22",
-            //         dim_type: "222"
-            //     }
-            // ]
-        })
+        var rs=data.rs
+        for(var i=0;i<10;i++){
+            data.rs=data.rs.concat(rs)
+        }
+        
+        data.fixedhead=true
+        data.fixedfoot=true;
 
-        _.query(".table").appendChild(g2)
+        var g2 = _.grid(data)
+        _.append(".table",g2)
     </script>
 </body>
 
