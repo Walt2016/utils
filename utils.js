@@ -373,11 +373,19 @@ _package("_", this, function () {
                 _remove(el, prop)
             }
         },
+        toggle: function (el, prop) {
+            if (!el) return;
+            if (_.has(el, prop)) {
+                _.remove(el, prop)
+            } else {
+                _.set(el, prop)
+            }
+        },
         //兼容IE ，nodeList.forEach
         forEach: function (arr, callback) {
             if (!arr) return;
             for (var i = 0; i < arr.length; i++) {
-                callback(arr[i])
+                callback(arr[i],i)
             }
         },
         //兼容ie8
@@ -416,7 +424,7 @@ _package("_", this, function () {
                 while (times--) fn.apply(this, args);
                 console.timeEnd(word);
             }
-            args.forEach(function (t) {
+            _.forEach(args,function (t) {
                 t && _run.call(this, t, times);
             });
         },
@@ -947,10 +955,7 @@ _package("_", this, function () {
             var _downArrow = function (e) {
                 var dialog = _.query("#dialog_officecode")
                 if (_.isShow(dialog)) {
-                    var li = _.query("li[active]", dialog) //li[active]
-                    if (!li) {
-                        li = _.query("li", dialog)
-                    }
+                    var li = _.query("li[active]", dialog)||_.query("li", dialog)
                     var nextLi = li.nextSibling;
                     _.remove(li, "active");
                     _.set(nextLi, "active")
@@ -959,11 +964,8 @@ _package("_", this, function () {
             var _upArrow = function (e) {
                 var dialog = _.query("#dialog_officecode")
                 if (_.isShow(dialog)) {
-                    var li = _.query("li[active]", dialog) //li[active]
-                    if (!li) {
-                        li = _.query("li", dialog)
-                    }
-                    var preLi = li.previousSibling
+                    var li = _.query("li[active]", dialog) ||_.query("li", dialog)
+                     var preLi = li.previousSibling
                     _.remove(li, "active");
                     _.set(preLi, "active")
                 }
@@ -2610,7 +2612,7 @@ _package("websql", _, function () {
 
 
             var tbls = [];
-            _.queryAll(".dataintable").forEach(function (t) {
+            _.forEach(_.queryAll(".dataintable"),function (t) {
                 tbls.push(t.getAttribute("tablename"));
             })
             this.createList(tbls);
@@ -2680,7 +2682,7 @@ _package("websql", _, function () {
         },
         getTbls: function () {
             var tbls = []
-            _.queryAll(".dataintable").forEach(function (t) {
+            _.forEach(_.queryAll(".dataintable"),function (t) {
                 tbls.push(t.getAttribute("tablename"))
             })
             return tbls
@@ -2809,7 +2811,7 @@ _package("websql", _, function () {
         },
         toggleHd: function (tbl) {
             var lis = _.queryAll(".slide .hd li")
-            lis.forEach(function (t) {
+            _.forEach(lis,function (t) {
                 if (t.innerText === tbl) {
                     t.hasAttribute("active") ? t.removeAttribute("active") : t.setAttribute("active", "")
                 }
@@ -2893,7 +2895,7 @@ _package("websql", _, function () {
 
 
                     var tnames = [];
-                    sql.split(";").forEach(function (t) {
+                    _.forEach(sql.split(";"),function (t) {
                         //查询语句
                         if ((/select\s[\s\S]+from\s/i).test(t)) {
                             var tname = ((t.match(/from\s(\S+)\s?/i) || [])[1] || "sqlcmd").toUpperCase();
@@ -2946,7 +2948,7 @@ _package("websql", _, function () {
         },
         getGridConfig: function () {
             var config = {}
-            this.gridConfig.forEach(function (t) {
+            _.forEach(this.gridConfig,function (t) {
                 var val = _.query("input[name='" + t.name + "']").checked
                 // var key = t.name.substring(4).toLowerCase();
                 var key = t.name.toLowerCase();
@@ -3605,7 +3607,7 @@ _package("canvas", _, function () {
             var ctx = this.ctx;
             ctx.strokeStyle = "#000";
             ctx.beginPath();
-            arr.forEach(function (t, i) {
+            _.forEach(arr,function (t, i) {
                 if (i === 0) {
                     ctx.moveTo.apply(ctx, t)
                 }
@@ -3624,12 +3626,12 @@ _package("canvas", _, function () {
             ctx.beginPath();
             if (_.type(o[0]) === "array") { //二维数组  多中心
                 var n = o.length;
-                arr.forEach(function (t, i) {
+                _.forEach(arr,function (t, i) {
                     ctx.moveTo.apply(ctx, o[i % n])
                     ctx.lineTo.apply(ctx, t)
                 })
             } else {
-                arr.forEach(function (t, i) {
+                _.forEach(arr,function (t, i) {
                     ctx.moveTo.apply(ctx, o)
                     ctx.lineTo.apply(ctx, t)
                 })
@@ -3650,7 +3652,7 @@ _package("canvas", _, function () {
             var len = arr.length
             ctx.strokeStyle = "#000";
             ctx.beginPath();
-            arr.forEach(function (t, i) {
+            _.forEach(arr,function (t, i) {
                 var t1 = i + 1 < len ? arr[i + 1] : arr[0];
                 var r = dis(t, t1, o)
                 ctx.arcTo.apply(ctx, t.concat(t1).concat([r]))

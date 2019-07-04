@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .test {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #000;
+        }
+
+        .test[active] {
+            background: #ccc
+        }
+    </style>
+</head>
+
+<body>
+    <script src="utils.js"></script>
+    <script>
+        // var toggle = function (el, prop) {
+        //     if (_.has(el, "active")) {
+        //         _.remove(el, "active")
+        //     } else {
+        //         _.set(el, "active")
+        //     }
+        // }
+        var len = 10
+        for (var i = 0; i < len; i++) {
+            var test = _.div("", {
+                "class": "test"
+            }, {
+                click: function (e) {
+                    var el = e.target
+
+                    _.toggle(el, "active")
+
+                }
+            })
+            _.append(document.body, test)
+        }
+
+        _package("shortcut", _, function () {
+            var keycodeMap = {
+                backspace: 8,
+                tab: 9,
+                clear: 12,
+                enter: 13,
+                shift: 16,
+                control: 17,
+                alt: 18,
+                capeLock: 20,
+                esc: 27,
+                pageup: 33,
+                pagedown: 34,
+                end: 35,
+                home: 36,
+                leftarrow: 37,
+                uparrow: 38,
+                rightarrow: 39,
+                downarrow: 40,
+                insert: 45,
+                delete: 46,
+                numLock: 144
+            }
+            var Shortcut = function (events) {
+                if (!(this instanceof Shortcut)) return new Shortcut(events);
+                this.events = events;
+
+                _.event(document, {
+                    keydown: this.init.bind(this),
+                })
+            }
+            return _.createClass(Shortcut, {
+                init: function (e) {
+                    var events = this.events;
+                    var keyCode = 0,
+                        e = e || event;
+                    keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+                    var target = e.target;
+                    for (var key in events) {
+                        if (keyCode === keycodeMap[key]) {
+                            events[key] && events[key](e)
+                        }
+                    }
+                }
+            })
+        })
+
+        _.shortcut({
+            enter: function (e) {
+                //KeyboardEvent 
+                // console.log(e)
+                // console.log(e.target)
+                var el = _.query("[active]") || _.query(".test")
+
+                _.toggle(el, "active")
+            },
+
+            leftarrow: function (e) {
+                console.log(e)
+                console.log(e.target)
+
+            }
+        })
+    </script>
+</body>
+
+</html>

@@ -135,9 +135,6 @@
             }
         ]
 
-
-
-
         _package("suggest", _, function () {
             var Suggest = function (options) {
                 if (!(this instanceof Suggest)) return new Suggest(options);
@@ -179,8 +176,6 @@
                                 _this.show(el)
                             }
                         }
-
-
 
                         el_text = _.trim(el.innerText)
                         if([13,37,38,39,40].indexOf(keyCode)>=0){
@@ -314,69 +309,6 @@
             data: officeCode
         })
 
-
-        // var _suggestionDialog = function (el) {
-        //     var dialog = _.query(".suggest_wrapper")
-        //     var p = _.pos(el)
-        //     _.css(dialog, {
-        //         position: "absolute",
-        //         top: p.y + p.height,
-        //         left: p.x
-        //     })
-        //     _.set(dialog, "source", el.id)
-        //     _.show(dialog)
-        // }
-
-        //回车事件
-        // var _enter = function (e) {
-        //     var el = e.target;
-        //     var dialog = _.query(".suggest_wrapper")
-        //     if (_.isShow(dialog)) {
-        //         var li = _.query("li[active]", dialog)
-        //         el.innerText = _.get(li, "code")
-        //         _.hide(dialog)
-        //     }
-        //     if (_.closest(el, "." + cssname_item)) {
-        //         e.preventDefault();
-        //         // if (!el.innerText) return;
-        //         if (el.innerText) {
-        //             _nextItem(el);
-        //         }
-        //     }
-        // }
-        // var _focus = function (e) {
-        //     var el = e.target;
-        //     _.set(el, "update")
-        //     _suggestionDialog(el)
-        // }
-
-
-        // //控制dialog选择
-        // var _downArrow = function (e) {
-        //     var dialog = _.query(".suggest_wrapper")
-        //     if (_.isShow(dialog)) {
-        //         var li = _.query("li[active]", dialog) //li[active]
-        //         if (!li) {
-        //             li = _.query("li", dialog)
-        //         }
-        //         var nextLi = li.nextSibling;
-        //         _.remove(li, "active");
-        //         _.set(nextLi, "active")
-        //     }
-        // }
-        // var _upArrow = function (e) {
-        //     var dialog = _.query(".suggest_wrapper")
-        //     if (_.isShow(dialog)) {
-        //         var li = _.query("li[active]", dialog) //li[active]
-        //         if (!li) {
-        //             li = _.query("li", dialog)
-        //         }
-        //         var preLi = li.previousSibling
-        //         _.remove(li, "active");
-        //         _.set(preLi, "active")
-        //     }
-
-        // }
     </script>
 </body>
 
