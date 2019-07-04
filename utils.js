@@ -678,7 +678,7 @@ _package("_", this, function () {
                 "class": cssname_group
             })
 
-            _.shortcut({
+            _.shortcut(document, {
                 enter: _enter
             })
             return _.div([label, group], {
@@ -869,7 +869,7 @@ _package("_", this, function () {
 
             }
             //快捷键
-            _.shortcut({
+            _.shortcut(document, {
                 enter: _enter,
                 leftArrow: _leftArrow,
                 downArrow: _downArrow,
@@ -1074,7 +1074,8 @@ _package("event", _, function () {
         }
         this.el = el;
         if (!el.events) el.events = {}
-        this.handlers = el.events
+        this.events = el.events
+        // this.handlers = el.events
         if (_.type(events) === "object") {
             for (var type in events) {
                 this.add(type, events[type])
@@ -1099,25 +1100,27 @@ _package("event", _, function () {
         //进行基于 DOM 的数据存储
         //store events
         store: function (type, listener) {
-            var handlers = this.handlers;
-            if (typeof handlers[type] === "undefined") {
-                handlers[type] = []
+            var el = this.el;
+            var events = this.events;
+            if (typeof events[type] === "undefined") {
+                events[type] = []
             }
-            handlers[type].push(listener)
+            events[type].push(listener)
         },
         //delete event
         delStore: function (type, listener) {
-            var handlers = this.handlers;
-            if (typeof handlers[type] === "undefined") {
-                handlers[type] = []
+            // var el=this.el;
+            var events = this.events;
+            if (typeof events[type] === "undefined") {
+                events[type] = []
             }
             if (listener == undefined) {
-                handlers[type].length = 0;
+                events[type].length = 0;
             } else {
-                var i = handlers[type].length;
+                var i = events[type].length;
                 while (i--) {
-                    if (handlers[type][i] === listener) {
-                        handlers[type].splice(i, 1);
+                    if (events[type][i] === listener) {
+                        events[type].splice(i, 1);
                     }
                 }
             }
@@ -1125,15 +1128,15 @@ _package("event", _, function () {
         //trigger event
         fire: function (type) {
             var el = this.el;
-            var handlers = this.handlers;
+            var events = this.events;
             var _fire = function (type) {
-                _.forEach(handlers[type], function (t) {
+                _.forEach(events[type], function (t) {
                     t(el)
                 })
             }
             if (_.type(type) === "array") {
                 _.forEach(type, function (typ) {
-                    _.forEach(handlers[typ], function (t) {
+                    _.forEach(events[typ], function (t) {
                         t(el)
                     })
                 })
@@ -1163,15 +1166,15 @@ _package("event", _, function () {
             this.delStore(type, listener)
         },
         clear: function (type) {
-            var handlers = this.handlers;
+            var events = this.el.events;
             var _this = this;
-            for (var key in handlers) {
-                _.forEach(handlers[key], function (t) {
+            for (var key in events) {
+                _.forEach(events[key], function (t) {
                     if (type === "") {
-                        _this.remove(t.type, t.listener)
+                        _this.remove(key, t)
                     } else {
-                        if (t.type === type) {
-                            _this.remove(t.type, t.listener)
+                        if (type === key) {
+                            _this.remove(type, t)
                         }
                     }
                 });
@@ -1206,37 +1209,49 @@ _package("shortcut", _, function () {
         delete: 46,
         numLock: 144
     }
-    var Shortcut = function (el, events) {
-        if (!(this instanceof Shortcut)) return new Shortcut(el, events);
+    var Shortcut = function (el, events, options) {
+        if (!(this instanceof Shortcut)) return new Shortcut(el, events, options);
         this.events = events;
         this.el = el || document;
         var _this = this;
-        var _bind = function (el) {
-            _.event(el, {
-                keydown: _this.init.bind(_this),
-            })
-        }
+        this.once = options ? options.once : false;
+        this.preventDefault = options ? options.preventDefault : false;
+
+
         if (_.type(el) === "array") {
             _.forEach(el, function (t) {
-                _bind(t)
+                _this.bindEvent(t, events)
             })
         } else {
-            _bind(el)
+            _this.bindEvent(el, events)
         }
     }
     return _.createClass(Shortcut, {
-        init: function (e) {
-            var events = this.events;
-            // var el = this.el;
-            var keyCode = 0,
-                e = e || event;
-            keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
-            // var target = e.target;
-            for (var key in events) {
-                if (keyCode === keycodeMap[key]) {
-                    events[key] && events[key](e)
-                }
+        bindEvent: function (el, events) {
+            var _this = this;
+            if (this.once) {
+                this.clear();
             }
+            _.event(el, {
+                //keydown  keyup
+                keydown: function (e) {
+                    var keyCode = 0,
+                        e = e || event;
+                    keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+                    for (var key in events) {
+                        if (keyCode === keycodeMap[key]) {
+                            events[key] && events[key](e)
+                            if (_this.preventDefault) {
+                                e.preventDefault()
+                            }
+                        }
+                    }
+
+                }
+            })
+        },
+        clear: function (el) {
+            _.event(el).clear("keydown")
         }
     })
 });
@@ -2001,98 +2016,187 @@ _package("grid", _, function () {
             table && _.remove(table, "active")
             _.set(this.grid, "active", "");
         },
+        //更新表格显示，同时要更新数据
+        setCellValue: function (cell, value) {
+            cell.innerText = value
+            var rowid = _.get(_.closest(cell, "tr"), "rowid");
+            var prop = _.get(cell, "prop")
+            this.rs[rowid][prop] = value
+
+        },
         //快捷键
         shortcut: function () {
-            //选择grid
-            document.body.onclick = function (e) {
-                var el = e.target;
-                var oldGrid = _.query(".dataintable[active]")
-                _.remove(oldGrid, "active")
-                var grid = _.closest(el, ".dataintable")
-                _.set(grid, "active", "")
-            };
-            document.onkeydown = function (e) {
-                var grid = _.query(".dataintable[active]")
-                var keyCode = 0,
-                    e = e || event;
-                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
-                switch (keyCode) {
-                    case 13: // enter 键
-                        var cell = _.query("td[active]", grid)
-                        // var input = _.query("input", cell)
-                        var input = _.query("div[contenteditable]", cell)
-                        if (cell && input) {
-                            cell.innerText = input.innerText
-                        }
-                        // cell.innerText = input.value;
-                        _.remove(cell, "update")
-                        break;
-                    case 27: // 按 Esc 
-
-                        break;
-                    case 37: //左箭头
-                        var cell = _.query("td[active]", grid)
-                        if (!cell) return;
-                        if (_.has(cell, "update")) {
-                            return
-                        }
-                        var val = cell.innerText
-                        var prop = _.get(cell, "prop")
-                        // var input = _.input(val, {
-                        //     name: prop
-                        // })
-                        var input = _.divInput(val, {
-                            name: prop
-                        })
-                        cell.innerText = "";
-                        _.append(cell, input)
-                        _.set(cell, "update", "")
-                        setTimeout(function () {
-                            input.focus();
-                            input.value = '';
-                            input.value = val;
-                        }, 0)
-                        break;
-                    case 38: //上箭头
-                        var tr = _.query("tr[active]", grid)
-                        if (!tr) return;
-                        var rowid = _.get(tr, "rowid");
-
-                        var cell = _.query("td[active]", grid)
-                        var prop = _.get(cell, "prop")
-
-                        _.remove(tr, "active")
-                        _.remove(cell, "active")
-
-
-                        var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
-                        if (newRow) {
-                            _.set(newRow, "active", "")
-                            var newCell = _.query("td[prop='" + prop + "']", newRow)
-                            _.set(newCell, "active", "")
-                        }
-                        break;
-                    case 40: //下箭头
-                        var tr = _.query("tr[active]", grid)
-                        if (!tr) return;
-                        var rowid = _.get(tr, "rowid");
-
-                        var cell = _.query("td[active]", grid)
-                        var prop = _.get(cell, "prop")
-
-                        _.remove(tr, "active")
-                        _.remove(cell, "active")
-                        var newRow = tr.nextSibling;
-                        if (newRow) {
-                            _.set(newRow, "active", "")
-                            var newCell = _.query("td[prop='" + prop + "']", newRow)
-                            _.set(newCell, "active", "")
-                        }
-
-                        break;
+            var _this = this;
+            _.event(document.body, {
+                click: function (e) {
+                    var el = e.target;
+                    var oldGrid = _.queryAll(".dataintable[active]")
+                    _.remove(oldGrid, "active")
+                    var grid = _.closest(el, ".dataintable")
+                    _.set(grid, "active", "")
                 }
-                console.log(e.keyCode)
-            };
+            })
+            _.shortcut(document, {
+                enter: function (e) {
+                    var grid = _.query(".dataintable[active]")
+                    var cell = _.query("td[active]", grid)
+                    // var input = _.query("input", cell)
+                    var input = _.query("div[contenteditable]", cell)
+                    if (cell && input) {
+                        // cell.innerText = input.innerText
+                        _this.setCellValue(cell, input.innerText)
+                    }
+                    // cell.innerText = input.value;
+                    _.remove(cell, "update");
+                },
+                leftarrow: function (e) {
+                    var grid = _.query(".dataintable[active]")
+                    var cell = _.query("td[active]", grid)
+                    if (!cell) return;
+                    if (_.has(cell, "update")) {
+                        return
+                    }
+                    var val = cell.innerText
+                    var prop = _.get(cell, "prop")
+                    // var input = _.input(val, {
+                    //     name: prop
+                    // })
+                    var input = _.divInput(val, {
+                        name: prop
+                    })
+                    cell.innerText = "";
+                    _.append(cell, input)
+                    _.set(cell, "update", "")
+                    setTimeout(function () {
+                        input.focus();
+                        input.value = '';
+                        input.value = val;
+                    }, 0)
+                },
+                uparrow: function (e) {
+                    var grid = _.query(".dataintable[active]")
+                    var tr = _.query("tr[active]", grid)
+                    if (!tr) return;
+                    var rowid = _.get(tr, "rowid");
+
+                    var cell = _.query("td[active]", grid)
+                    var prop = _.get(cell, "prop")
+
+                    _.remove(tr, "active")
+                    _.remove(cell, "active")
+
+
+                    var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
+                    if (newRow) {
+                        _.set(newRow, "active", "")
+                        var newCell = _.query("td[prop='" + prop + "']", newRow)
+                        _.set(newCell, "active", "")
+                    }
+                },
+                downarrow: function (e) {
+                    var grid = _.query(".dataintable[active]")
+                    var tr = _.query("tr[active]", grid)
+                    if (!tr) return;
+                    var rowid = _.get(tr, "rowid");
+
+                    var cell = _.query("td[active]", grid)
+                    var prop = _.get(cell, "prop")
+
+                    _.remove(tr, "active")
+                    _.remove(cell, "active")
+                    var newRow = tr.nextSibling;
+                    if (newRow) {
+                        _.set(newRow, "active", "")
+                        var newCell = _.query("td[prop='" + prop + "']", newRow)
+                        _.set(newCell, "active", "")
+                    }
+                }
+            }, {
+                once: true,
+                preventDefault: true
+            })
+            // document.onkeydown = function (e) {
+            //     var grid = _.query(".dataintable[active]")
+            //     var keyCode = 0,
+            //         e = e || event;
+            //     keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+            //     switch (keyCode) {
+            //         case 13: // enter 键
+            //             var cell = _.query("td[active]", grid)
+            //             // var input = _.query("input", cell)
+            //             var input = _.query("div[contenteditable]", cell)
+            //             if (cell && input) {
+            //                 cell.innerText = input.innerText
+            //             }
+            //             // cell.innerText = input.value;
+            //             _.remove(cell, "update")
+            //             break;
+            //         case 27: // 按 Esc 
+
+            //             break;
+            //         case 37: //左箭头
+            //             var cell = _.query("td[active]", grid)
+            //             if (!cell) return;
+            //             if (_.has(cell, "update")) {
+            //                 return
+            //             }
+            //             var val = cell.innerText
+            //             var prop = _.get(cell, "prop")
+            //             // var input = _.input(val, {
+            //             //     name: prop
+            //             // })
+            //             var input = _.divInput(val, {
+            //                 name: prop
+            //             })
+            //             cell.innerText = "";
+            //             _.append(cell, input)
+            //             _.set(cell, "update", "")
+            //             setTimeout(function () {
+            //                 input.focus();
+            //                 input.value = '';
+            //                 input.value = val;
+            //             }, 0)
+            //             break;
+            //         case 38: //上箭头
+            //             var tr = _.query("tr[active]", grid)
+            //             if (!tr) return;
+            //             var rowid = _.get(tr, "rowid");
+
+            //             var cell = _.query("td[active]", grid)
+            //             var prop = _.get(cell, "prop")
+
+            //             _.remove(tr, "active")
+            //             _.remove(cell, "active")
+
+
+            //             var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
+            //             if (newRow) {
+            //                 _.set(newRow, "active", "")
+            //                 var newCell = _.query("td[prop='" + prop + "']", newRow)
+            //                 _.set(newCell, "active", "")
+            //             }
+            //             break;
+            //         case 40: //下箭头
+            //             var tr = _.query("tr[active]", grid)
+            //             if (!tr) return;
+            //             var rowid = _.get(tr, "rowid");
+
+            //             var cell = _.query("td[active]", grid)
+            //             var prop = _.get(cell, "prop")
+
+            //             _.remove(tr, "active")
+            //             _.remove(cell, "active")
+            //             var newRow = tr.nextSibling;
+            //             if (newRow) {
+            //                 _.set(newRow, "active", "")
+            //                 var newCell = _.query("td[prop='" + prop + "']", newRow)
+            //                 _.set(newCell, "active", "")
+            //             }
+
+            //             break;
+            //     }
+            //     console.log(e.keyCode)
+            // };
         }
     })
 });
