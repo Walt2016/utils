@@ -74,109 +74,6 @@ _package("_", this, function () {
             }
             return obj;
         },
-        // addEvent: function (type, el, listener) {
-        //     var events = {}
-        //     events[type] = listener
-        //     _.event(events, el)
-        //     // if (arguments.length === 2 && _.type(arguments[1]) === "function") {
-        //     //     el = window;
-        //     //     listener = arguments[1]
-        //     // }
-
-        //     // if (window.addEventListener) {
-        //     //     el.addEventListener(type, listener, false);
-        //     // } else {
-        //     //     el.attachEvent('on' + type, listener);
-        //     // }
-        //     // //store events
-        //     // if (!el.events) el.events = [];
-
-        //     // el.events.push({
-        //     //     type: type,
-        //     //     el: el,
-        //     //     listener: listener
-        //     // }); //listener
-        // },
-        // removeEvent: function (type, el, listener) {
-        //     //  console.log(typeof el)   
-        //     // if (!_.isElement(el)) return false;
-        //     // if (listener) {
-        //     //     if (window.removeEventListener) {
-        //     //         el.removeEventListener(type, listener, {
-        //     //             passive: false
-        //     //         }); //false
-        //     //     } else {
-        //     //         el.detachEvent('on' + type, listener);
-        //     //     }
-        //     //     //delete event
-        //     //     if (!el.events) {
-        //     //         el.events = [];
-        //     //     }
-        //     //     var i = el.events.length;
-        //     //     while (i--) {
-        //     //         if (el.events[i].type === type && el.events[i].listener === listener) el.events.splice(i, 1);
-        //     //     }
-        //     // } else {
-        //     //     el.events && _.forEach(el.events, function (t) {
-        //     //         if (type === "") {
-        //     //             _.removeEvent(t.type, t.el, t.listener)
-        //     //         } else {
-        //     //             if (t.type === type) {
-        //     //                 _.removeEvent(t.type, t.el, t.listener)
-        //     //             }
-        //     //         }
-
-        //     //     });
-        //     // }
-        // },
-        //fire
-        // callEvent: function (el, type) {
-        //     // el && el.events && _.forEach(el.events[type], function (t) {
-        //     //     t(el)
-        //     // })
-
-        //     _.evnt(el).fire(type)
-        // },
-        //快捷键  全局键盘事件
-        shortcut: function (events) { //ele, key, callback
-            var keycodeMap = {
-                enter: 13, //回车
-                leftArrow: 37, //左箭头
-                upArrow: 38, //上箭头
-                rightArrow: 39, //右箭头
-                downArrow: 40 //下箭头
-            }
-            var _shortcut = function (e) {
-                var keyCode = 0,
-                    e = e || event;
-                keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
-                var target = e.target;
-                for (var key in events) {
-                    if (keyCode === keycodeMap[key]) {
-                        events[key] && events[key](e)
-                        // switch (keyCode) {
-                        //     case 13: //回车  判断光标位置 在指定区域内
-                        //         // if (_.closest(target, ele)) {
-                        //             callback(e)
-                        //         // }
-                        //         break;
-                        //     default:
-                        //         callback(e);
-                        // }
-                    }
-                }
-            }
-
-            // if (keyCode == key && _.closest(target, ele)) { //&& target == ele   _.closest(target, "." + ele.className)
-            //     callback(e)
-            // }
-
-            // _.removeEvent("keydown", document); //先删除   ，最后绑定一次有效
-            // _.addEvent("keydown", document, _shortcut)
-            _.event(document, {
-                keydown: _shortcut,
-            })
-        },
         //全局鼠标事件
         globalClick: function (callback) {
             // _.removeEvent("click", document); //先删除   ，最后绑定一次有效
@@ -385,7 +282,7 @@ _package("_", this, function () {
         forEach: function (arr, callback) {
             if (!arr) return;
             for (var i = 0; i < arr.length; i++) {
-                callback(arr[i],i)
+                callback(arr[i], i)
             }
         },
         //兼容ie8
@@ -424,7 +321,7 @@ _package("_", this, function () {
                 while (times--) fn.apply(this, args);
                 console.timeEnd(word);
             }
-            _.forEach(args,function (t) {
+            _.forEach(args, function (t) {
                 t && _run.call(this, t, times);
             });
         },
@@ -955,7 +852,7 @@ _package("_", this, function () {
             var _downArrow = function (e) {
                 var dialog = _.query("#dialog_officecode")
                 if (_.isShow(dialog)) {
-                    var li = _.query("li[active]", dialog)||_.query("li", dialog)
+                    var li = _.query("li[active]", dialog) || _.query("li", dialog)
                     var nextLi = li.nextSibling;
                     _.remove(li, "active");
                     _.set(nextLi, "active")
@@ -964,8 +861,8 @@ _package("_", this, function () {
             var _upArrow = function (e) {
                 var dialog = _.query("#dialog_officecode")
                 if (_.isShow(dialog)) {
-                    var li = _.query("li[active]", dialog) ||_.query("li", dialog)
-                     var preLi = li.previousSibling
+                    var li = _.query("li[active]", dialog) || _.query("li", dialog)
+                    var preLi = li.previousSibling
                     _.remove(li, "active");
                     _.set(preLi, "active")
                 }
@@ -1225,7 +1122,7 @@ _package("event", _, function () {
                 }
             }
         },
-        //trigger fire
+        //trigger event
         fire: function (type) {
             var el = this.el;
             var handlers = this.handlers;
@@ -1266,7 +1163,6 @@ _package("event", _, function () {
             this.delStore(type, listener)
         },
         clear: function (type) {
-            var el = this.el
             var handlers = this.handlers;
             var _this = this;
             for (var key in handlers) {
@@ -1282,6 +1178,66 @@ _package("event", _, function () {
             }
         }
 
+    })
+});
+
+
+//快捷键
+_package("shortcut", _, function () {
+    var keycodeMap = {
+        backspace: 8,
+        tab: 9,
+        clear: 12,
+        enter: 13,
+        shift: 16,
+        control: 17,
+        alt: 18,
+        capeLock: 20,
+        esc: 27,
+        pageup: 33,
+        pagedown: 34,
+        end: 35,
+        home: 36,
+        leftarrow: 37,
+        uparrow: 38,
+        rightarrow: 39,
+        downarrow: 40,
+        insert: 45,
+        delete: 46,
+        numLock: 144
+    }
+    var Shortcut = function (el, events) {
+        if (!(this instanceof Shortcut)) return new Shortcut(el, events);
+        this.events = events;
+        this.el = el || document;
+        var _this = this;
+        var _bind = function (el) {
+            _.event(el, {
+                keydown: _this.init.bind(_this),
+            })
+        }
+        if (_.type(el) === "array") {
+            _.forEach(el, function (t) {
+                _bind(t)
+            })
+        } else {
+            _bind(el)
+        }
+    }
+    return _.createClass(Shortcut, {
+        init: function (e) {
+            var events = this.events;
+            // var el = this.el;
+            var keyCode = 0,
+                e = e || event;
+            keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
+            // var target = e.target;
+            for (var key in events) {
+                if (keyCode === keycodeMap[key]) {
+                    events[key] && events[key](e)
+                }
+            }
+        }
     })
 });
 
@@ -2612,7 +2568,7 @@ _package("websql", _, function () {
 
 
             var tbls = [];
-            _.forEach(_.queryAll(".dataintable"),function (t) {
+            _.forEach(_.queryAll(".dataintable"), function (t) {
                 tbls.push(t.getAttribute("tablename"));
             })
             this.createList(tbls);
@@ -2682,7 +2638,7 @@ _package("websql", _, function () {
         },
         getTbls: function () {
             var tbls = []
-            _.forEach(_.queryAll(".dataintable"),function (t) {
+            _.forEach(_.queryAll(".dataintable"), function (t) {
                 tbls.push(t.getAttribute("tablename"))
             })
             return tbls
@@ -2811,7 +2767,7 @@ _package("websql", _, function () {
         },
         toggleHd: function (tbl) {
             var lis = _.queryAll(".slide .hd li")
-            _.forEach(lis,function (t) {
+            _.forEach(lis, function (t) {
                 if (t.innerText === tbl) {
                     t.hasAttribute("active") ? t.removeAttribute("active") : t.setAttribute("active", "")
                 }
@@ -2895,7 +2851,7 @@ _package("websql", _, function () {
 
 
                     var tnames = [];
-                    _.forEach(sql.split(";"),function (t) {
+                    _.forEach(sql.split(";"), function (t) {
                         //查询语句
                         if ((/select\s[\s\S]+from\s/i).test(t)) {
                             var tname = ((t.match(/from\s(\S+)\s?/i) || [])[1] || "sqlcmd").toUpperCase();
@@ -2948,7 +2904,7 @@ _package("websql", _, function () {
         },
         getGridConfig: function () {
             var config = {}
-            _.forEach(this.gridConfig,function (t) {
+            _.forEach(this.gridConfig, function (t) {
                 var val = _.query("input[name='" + t.name + "']").checked
                 // var key = t.name.substring(4).toLowerCase();
                 var key = t.name.toLowerCase();
@@ -3607,7 +3563,7 @@ _package("canvas", _, function () {
             var ctx = this.ctx;
             ctx.strokeStyle = "#000";
             ctx.beginPath();
-            _.forEach(arr,function (t, i) {
+            _.forEach(arr, function (t, i) {
                 if (i === 0) {
                     ctx.moveTo.apply(ctx, t)
                 }
@@ -3626,12 +3582,12 @@ _package("canvas", _, function () {
             ctx.beginPath();
             if (_.type(o[0]) === "array") { //二维数组  多中心
                 var n = o.length;
-                _.forEach(arr,function (t, i) {
+                _.forEach(arr, function (t, i) {
                     ctx.moveTo.apply(ctx, o[i % n])
                     ctx.lineTo.apply(ctx, t)
                 })
             } else {
-                _.forEach(arr,function (t, i) {
+                _.forEach(arr, function (t, i) {
                     ctx.moveTo.apply(ctx, o)
                     ctx.lineTo.apply(ctx, t)
                 })
@@ -3652,7 +3608,7 @@ _package("canvas", _, function () {
             var len = arr.length
             ctx.strokeStyle = "#000";
             ctx.beginPath();
-            _.forEach(arr,function (t, i) {
+            _.forEach(arr, function (t, i) {
                 var t1 = i + 1 < len ? arr[i + 1] : arr[0];
                 var r = dis(t, t1, o)
                 ctx.arcTo.apply(ctx, t.concat(t1).concat([r]))
