@@ -179,7 +179,7 @@ _package("_", this, function () {
         },
         append: function (el, child) {
             var _createTextNode = function (t) {
-                if (_.indexOf(["string", "number", "date"], _.type(t)) >= 0) {
+                if (_.indexOf(["string", "number", "date","nan"], _.type(t)) >= 0) {
                     t = document.createTextNode(t)
                 }
                 return t
@@ -1931,9 +1931,17 @@ _package("grid", _, function () {
             _.set(th, "seq", seq === "asc" ? "desc" :
                 "asc")
             _this.rs.sort(_.sortBy(prop, seq === "asc", typ))
+
+            _this._flash();
+
+        },
+        _flash:function(){
+            var _this=this;
             var tbody = _this._tbody();
             var oldTbody = _.query("tbody", _this.grid)
             _.replace(oldTbody, tbody)
+            var oldTfoot = _.query("tfoot", _this.grid)
+            _.replace(oldTfoot, _this.tfoot)
         },
         _optPanel: function () {
             var _this = this;
@@ -2022,7 +2030,10 @@ _package("grid", _, function () {
             var rowid = _.get(_.closest(cell, "tr"), "rowid");
             var prop = _.get(cell, "prop")
             this.rs[rowid][prop] = value
+            //update tfoot
+            // this.grid=_.closest(cell,".dataintable")
 
+            this._flash()
         },
         //快捷键
         shortcut: function () {
@@ -2074,8 +2085,8 @@ _package("grid", _, function () {
                     }, 0)
                 },
                 uparrow: function (e) {
-                    var grid = _.query(".dataintable[active]")
-                    var tr = _.query("tr[active]", grid)
+                    var grid = _.query(".dataintable[active] tbody")
+                    var tr = _.query("tr[active]", grid) ;//|| _.query("tr:last-child", grid)
                     if (!tr) return;
                     var rowid = _.get(tr, "rowid");
 
@@ -2094,8 +2105,8 @@ _package("grid", _, function () {
                     }
                 },
                 downarrow: function (e) {
-                    var grid = _.query(".dataintable[active]")
-                    var tr = _.query("tr[active]", grid)
+                    var grid = _.query(".dataintable[active] tbody")
+                    var tr = _.query("tr[active]", grid) ;//|| _.query("tr", grid)
                     if (!tr) return;
                     var rowid = _.get(tr, "rowid");
 
@@ -2115,88 +2126,6 @@ _package("grid", _, function () {
                 once: true,
                 preventDefault: true
             })
-            // document.onkeydown = function (e) {
-            //     var grid = _.query(".dataintable[active]")
-            //     var keyCode = 0,
-            //         e = e || event;
-            //     keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
-            //     switch (keyCode) {
-            //         case 13: // enter 键
-            //             var cell = _.query("td[active]", grid)
-            //             // var input = _.query("input", cell)
-            //             var input = _.query("div[contenteditable]", cell)
-            //             if (cell && input) {
-            //                 cell.innerText = input.innerText
-            //             }
-            //             // cell.innerText = input.value;
-            //             _.remove(cell, "update")
-            //             break;
-            //         case 27: // 按 Esc 
-
-            //             break;
-            //         case 37: //左箭头
-            //             var cell = _.query("td[active]", grid)
-            //             if (!cell) return;
-            //             if (_.has(cell, "update")) {
-            //                 return
-            //             }
-            //             var val = cell.innerText
-            //             var prop = _.get(cell, "prop")
-            //             // var input = _.input(val, {
-            //             //     name: prop
-            //             // })
-            //             var input = _.divInput(val, {
-            //                 name: prop
-            //             })
-            //             cell.innerText = "";
-            //             _.append(cell, input)
-            //             _.set(cell, "update", "")
-            //             setTimeout(function () {
-            //                 input.focus();
-            //                 input.value = '';
-            //                 input.value = val;
-            //             }, 0)
-            //             break;
-            //         case 38: //上箭头
-            //             var tr = _.query("tr[active]", grid)
-            //             if (!tr) return;
-            //             var rowid = _.get(tr, "rowid");
-
-            //             var cell = _.query("td[active]", grid)
-            //             var prop = _.get(cell, "prop")
-
-            //             _.remove(tr, "active")
-            //             _.remove(cell, "active")
-
-
-            //             var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
-            //             if (newRow) {
-            //                 _.set(newRow, "active", "")
-            //                 var newCell = _.query("td[prop='" + prop + "']", newRow)
-            //                 _.set(newCell, "active", "")
-            //             }
-            //             break;
-            //         case 40: //下箭头
-            //             var tr = _.query("tr[active]", grid)
-            //             if (!tr) return;
-            //             var rowid = _.get(tr, "rowid");
-
-            //             var cell = _.query("td[active]", grid)
-            //             var prop = _.get(cell, "prop")
-
-            //             _.remove(tr, "active")
-            //             _.remove(cell, "active")
-            //             var newRow = tr.nextSibling;
-            //             if (newRow) {
-            //                 _.set(newRow, "active", "")
-            //                 var newCell = _.query("td[prop='" + prop + "']", newRow)
-            //                 _.set(newCell, "active", "")
-            //             }
-
-            //             break;
-            //     }
-            //     console.log(e.keyCode)
-            // };
         }
     })
 });
