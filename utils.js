@@ -179,7 +179,7 @@ _package("_", this, function () {
         },
         append: function (el, child) {
             var _createTextNode = function (t) {
-                if (_.indexOf(["string", "number", "date", "nan","undefined"], _.type(t)) >= 0) {
+                if (_.indexOf(["string", "number", "date", "nan", "undefined"], _.type(t)) >= 0) {
                     t = document.createTextNode(t)
                 }
                 return t
@@ -300,7 +300,7 @@ _package("_", this, function () {
         map: function (arr, callback) {
             var arr2 = []
             for (var i = 0; i < arr.length; i++) {
-                arr2[arr2.length] = callback(arr[i],i)
+                arr2[arr2.length] = callback(arr[i], i)
             }
             return arr2;
         },
@@ -1231,7 +1231,7 @@ _package("shortcut", _, function () {
         this.el = el || document;
         this.clear = options ? options.clear : false;
         // this.preventDefault = options ? options.preventDefault : false;
-        _.exe.call(this,this.bindEvent,el, events)
+        _.exe.call(this, this.bindEvent, el, events)
     }
     return _.createClass(Shortcut, {
         bindEvent: function (el, events) {
@@ -1247,8 +1247,7 @@ _package("shortcut", _, function () {
                     keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
                     for (var key in events) {
                         if (keyCode === keycodeMap[key]) {
-                            // events[key] && events[key](e)
-                            if(!events[key](e)){
+                            if (!events[key](e)) {
                                 e.preventDefault()
                             }
                             // if (_this.preventDefault) {
@@ -1630,15 +1629,15 @@ _package("grid", _, function () {
         this.offset = 0;
         if (this.config.check) this.offset++;
         if (this.config.seq) this.offset++;
-        this.css={
-            table:"dataintable",
-            fixedhead:"table-fixed-head",
-            fixedfoot:"table-fixed-foot",
-            fixedbody:"table-fixed-body",
-            icon:"icon",
-            text:"text",
-            number:"number",
-            string:"string"
+        this.css = {
+            table: "dataintable",
+            fixedhead: "table-fixed-head",
+            fixedfoot: "table-fixed-foot",
+            fixedbody: "table-fixed-body",
+            icon: "icon",
+            text: "text",
+            number: "number",
+            string: "string"
         }
         return this.grid = this._output()
     }
@@ -1662,6 +1661,11 @@ _package("grid", _, function () {
                     label: "合计数字列",
                     checked: true,
                     name: "statistic"
+                },
+                {
+                    label: "显示行合计",
+                    checked: true,
+                    name: "rowStatistic"
                 },
                 {
                     label: "固定表头",
@@ -1764,6 +1768,14 @@ _package("grid", _, function () {
                     });
             }
         },
+        //列操作
+        _col: function (colgroup, cols) {
+            var config = this.config
+            for (var key in cols) {
+                var method = ["seq", "check"].indexOf(key) >= 0 ? "unshift" : "push"
+                if (config[key]) colgroup[method](cols[key]);
+            }
+        },
         _colGroup: function () {
             //定义列宽
             var tbl = this.tbl;
@@ -1775,16 +1787,18 @@ _package("grid", _, function () {
                     style: "width: " + (t.width ? t.width : defWidth) + ";"
                 })
             })
-            if (config.seq) colgroup.unshift(_.col("", {
-                style: "width: 5%;"
-            }));
-            if (config.check) colgroup.unshift(_.col("", {
-                style: "width: 5%;"
-            }));
-            // //滚动条占位
-            // colgroup.push(_.col("", {
-            //     style: "width: 40px;"
-            // }));
+
+            this._col(colgroup, {
+                seq: _.col("", {
+                    style: "width: 5%;"
+                }),
+                check: _.col("", {
+                    style: "width: 5%;"
+                }),
+                rowStatistic: _.col("", {
+                    style: "width: 5%;"
+                })
+            })
             return _.colgroup(colgroup)
         },
         _row: function (r, i) {
@@ -1796,15 +1810,24 @@ _package("grid", _, function () {
             var typs = this.typs;
             var offset = this.offset;
             var count = this.count
-            var cell = _.map(typs,function (t, j) {
+            var rowStatistic = 0
+            var _td = function (val, typ, prop) {
+                return _.td(val, {
+                    "class": typ,
+                    prop: prop
+                });
+            }
+            var cell = _.map(typs, function (t, j) {
                 var typ = t; //typs[j]
                 var fmt = fmts[j]
                 var prop = props[j]
                 var val = r[prop]
+
                 //计算
                 switch (typ) {
                     case "number":
                         var colIndex = j + offset;
+                        rowStatistic += parseFloat(val);
                         //数据行累加计算
                         if (i > 0 && val) {
                             tfoot[colIndex] += parseFloat(val);
@@ -1823,13 +1846,18 @@ _package("grid", _, function () {
 
                         break;
                 }
-                return _.td(val, {
-                    "class": typ,
-                    prop: prop
-                });
+                return _td(val, typ, prop)
             });
-            if (config.seq) cell.unshift(_.td((i+1) ));
-            if (config.check) cell.unshift(_.td(_.checkbox()));
+            // if (config.seq) cell.unshift(_.td((i + 1)));
+            // if (config.check) cell.unshift(_.td(_.checkbox()));
+            // if (config.rowStatistic) cell.push(_td(rowStatistic, "number", "rowStatistic"))
+
+            this._col(cell, {
+                seq: _.td((i + 1)),
+                check: _.td(_.checkbox()),
+                rowStatistic: _td(rowStatistic, "number", "rowStatistic")
+            })
+
             return _.tr(cell, {
                 rowid: i
             })
@@ -1842,8 +1870,23 @@ _package("grid", _, function () {
             var typs = this.typs;
             var fmts = this.fmts;
             var props = this.props;
+            var _th = function (lable, typ, prop, seq) {
+                return _.th([_.div(lable, {
+                    "class": _this.css.text
+                }), _.div("", {
+                    "class": _this.css.icon
+                })], {
+                    "class": typ,
+                    prop: prop,
+                    seq: seq
+                }, {
+                    click: function (e) {
+                        _this._sort(e.target)
+                    }
+                });
+            }
             var thead =
-                _.map(tbl,function (t) {
+                _.map(tbl, function (t) {
                     var typ = t.type ? t.type : "string";
                     var fmt = t.format ? t.format : "";
                     var lable = t.label ? t.label : t;
@@ -1862,29 +1905,20 @@ _package("grid", _, function () {
                         fmts.push(fmt);
                         props.push(prop)
                     }
-                    return hide ? "" : _.th([_.div(lable, {
-                        "class": _this.css.text
-                    }), _.div("", {
-                        "class": _this.css.icon
-                    })], {
-                        "class": typ,
-                        prop: prop,
-                        seq: seq
-                    }, {
-                        click: function (e) {
-                            _this._sort(e.target)
-                        }
-                    });
+                    return hide ? "" : _th(lable, typ, prop, seq);
                 });
 
-            if (config.seq) thead.unshift(_.th("#"));
-            if (config.check) thead.unshift(_.th(_.checkbox(), {
-                "class": "selectAll"
-            }, {
-                click: function (e) {
-                    _this.selectAll(e.target)
-                }
-            }));
+            this._col(thead, {
+                seq: _.th("#"),
+                check: _.th(_.checkbox(), {
+                    "class": "selectAll"
+                }, {
+                    click: function (e) {
+                        _this.selectAll(e.target)
+                    }
+                }),
+                rowStatistic: _th("小计", "number", "rowStatistic", "")
+            })
             //滚动条占位
             // thead.push(_.th(""))
             return _.thead(thead, {}, {
@@ -1904,21 +1938,34 @@ _package("grid", _, function () {
             var props = this.props;
             var tfoot = [];
             //代替  Array.fill
-            for (var i = 0; i < offset; i++) {
-                tfoot.push("")
-            }
-            this.tfoot = tfoot.concat(typs).map(function (t, i) {
+            // for (var i = 0; i < offset; i++) {
+            //     tfoot.push("")
+            // }
+
+            // this.tfoot = tfoot.concat(typs).map(function (t, i) {
+            //     return i === 0 ? "合计" : t === "number" ? 0 : "";
+            // });
+            // if (config.rowStatistic) this.tfoot.push("");
+
+
+            this.tfoot=_.map(typs,function (t, i) {
                 return i === 0 ? "合计" : t === "number" ? 0 : "";
-            });
+            })
+            this._col( this.tfoot,{
+                seq:"",
+                check:"",
+                rowStatistic:""
+            })
+
             var tbody =
                 count === 0 ? _.createEle("tr td", "未查到记录", {
                     colspan: tbl.length + offset
                 }) :
-                _.map(rs,function (r, i) {
-                    return _this._row(r, i ) //+ 1
+                _.map(rs, function (r, i) {
+                    return _this._row(r, i) //+ 1
                 });
 
-            this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
+                this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
                 return _.td(t, {
                     "class": t === "" ? "string" : "number",
                     prop: i >= offset ? props[i - offset] : ""
@@ -1984,7 +2031,7 @@ _package("grid", _, function () {
             }), _.btn("取消", {}, {
                 click: function (e) {
                     var el = e.target,
-                        table = _.closest(el, "."+this.css.table);
+                        table = _.closest(el, "." + _this.css.table);
                     var cbs = _.queryAll(
                         "input[type='checkbox']:checked", table);
                     _.forEach(cbs, function (t) {
@@ -2023,9 +2070,9 @@ _package("grid", _, function () {
         moveActiveCell: function (direction) {
             var grid = _.query(".dataintable[active] tbody")
             var tr = _.query("tr[active]", grid); // || _.query("tr:last-child", grid)
-            if (!tr) return;
+            if (!tr) return true;
             // console.log(document.activeElement)
-            if(_.has(document.activeElement,"contenteditable")){
+            if (_.has(document.activeElement, "contenteditable")) {
                 return true;
             }
             var cell = _.query("td[active]", grid)
@@ -2054,10 +2101,10 @@ _package("grid", _, function () {
             if (newTr && newCell) {
                 _.set([newTr, newCell], "active", "")
             }
-            return false;  //preventDefault
+            return false; //preventDefault
         },
         updateActiveCell: function () {
-            var grid = _.query("."+this.css.table+"[active]")
+            var grid = _.query("." + this.css.table + "[active]")
             var cell = _.query("td[active]", grid)
             if (!cell) return;
             if (_.has(cell, "update")) {
@@ -2081,7 +2128,7 @@ _package("grid", _, function () {
             }, 0)
         },
         saveUpdateCell: function () {
-            var grid = _.query("."+this.css.table+"[active]")
+            var grid = _.query("." + this.css.table + "[active]")
             var cell = _.query("td[active]", grid)
             // var input = _.query("input", cell)
             var input = _.query("div[contenteditable]", cell)
@@ -2125,15 +2172,19 @@ _package("grid", _, function () {
             _.event(document.body, {
                 click: function (e) {
                     var el = e.target;
-                    var oldGrid = _.queryAll("."+_this.css.table+"[active]")
+                    var oldGrid = _.queryAll("." + _this.css.table + "[active]")
                     _.remove(oldGrid, "active")
                     var grid = _.closest(el, ".dataintable")
                     _.set(grid, "active", "")
-                }
+                },
+                // dbclick: function (e) {
+                //     console.log(e)
+                //     _this.updateActiveCell.call(_this);
+                // }
             })
             _.shortcut(document, {
                 enter: function (e) {
-                    var grid = _.query("."+_this.css.table+"[active]")
+                    var grid = _.query("." + _this.css.table + "[active]")
                     var cell = _.query("td[active]", grid)
                     if (_.has(cell, "update")) {
                         _this.saveUpdateCell.call(_this);
@@ -2142,16 +2193,16 @@ _package("grid", _, function () {
                     }
                 },
                 leftarrow: function (e) {
-                    _this.moveActiveCell("left")
+                   return _this.moveActiveCell("left")
                 },
                 rightarrow: function () {
-                    _this.moveActiveCell("right")
+                    return _this.moveActiveCell("right")
                 },
                 uparrow: function (e) {
-                    _this.moveActiveCell("up")
+                    return _this.moveActiveCell("up")
                 },
                 downarrow: function (e) {
-                    _this.moveActiveCell("down")
+                    return _this.moveActiveCell("down")
                 }
             }, {
                 clear: true
@@ -2801,8 +2852,8 @@ _package("websql", _, function () {
                 len === 0 ? _.wrap("tr td", "未查到记录", {
                     colspan: tbl.length + offset
                 }) :
-                _.map(rs,function (r, i) {
-                    return _row(r, i )//+ 1
+                _.map(rs, function (r, i) {
+                    return _row(r, i) //+ 1
                 }).join("");
 
             tfoot = tfoot.map(function (t) {
