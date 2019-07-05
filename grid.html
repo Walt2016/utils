@@ -15,88 +15,6 @@
     <div class="table"></div>
     <script src="utils.js"></script>
     <script>
-        // var wrap = _.query(".wrap")
-        // var ul = _.ul(_.li([_.i("", {
-        //     class: "iocn"
-        // }), _.span("test")]))
-        // wrap.appendChild(ul)
-
-        // _.template({
-        //     el:".template",
-        //     data:{
-        //         a:"1",
-        //         b:33,
-
-        //     }
-        // })
-
-        //dimension
-        // var tp_dim = [{
-        //         prop: "dim_id",
-        //         label: "维度编码",
-        //         type: "string",
-        //         pk: true
-        //     },
-        //     {
-        //         prop: "dim_name",
-        //         label: "维度名称",
-        //         type: "string"
-        //     },
-        //     {
-        //         prop: "dim_level",
-        //         label: "维度优先级",
-        //         type: "string"
-        //     },
-        //     {
-        //         prop: "dim_type",
-        //         label: "维度类型",
-        //         type: "string"
-        //     }
-        // ]
-
-        ////tname, rs, options, outputType
-
-
-
-        // var g = _.grid({
-        //     tbl: [{
-        //             prop: "dim_id",
-        //             label: "维度编码",
-        //             type: "string",
-        //             pk: true
-        //         },
-        //         {
-        //             prop: "dim_name",
-        //             label: "维度名称",
-        //             type: "string"
-        //         },
-        //         {
-        //             prop: "dim_level",
-        //             label: "维度优先级",
-        //             type: "string"
-        //         },
-        //         {
-        //             prop: "dim_type",
-        //             label: "维度类型",
-        //             type: "string"
-        //         }
-        //     ],
-        //     // rs: [1, 2, 3, 4]
-        //     rs: [{
-        //             dim_id: 1,
-        //             dim_name: "22",
-        //             dim_level: "22",
-        //             dim_type: "222"
-        //         },
-        //         {
-        //             dim_id: 1,
-        //             dim_name: "哈哈哈",
-        //             dim_level: "22",
-        //             dim_type: "222"
-        //         }
-        //     ]
-        // })
-
         var data={
             tname: "成绩单",
             tbl: [{
@@ -112,8 +30,13 @@
                 },
 
                 {
-                    prop: "score",
-                    label: "成绩",
+                    prop: "mathematics",
+                    label: "数学",
+                    type: "number"
+                },
+                {
+                    prop: "chinese",
+                    label: "语文",
                     type: "number"
                 },
                 // {
@@ -126,41 +49,30 @@
             rs: [{
                     test: 11111,
                     id: 10,
-                    name: "小王",
-                    score: 100,
+                    name: "张恨桃",
+                    mathematics: 100,
+                    chinese: 100,
                     age: 10
                 },
                 {
                     id: 11,
-                    name: "老李",
-                    score: 80
+                    name: "李依秋",
+                    mathematics: 80,
+                    chinese: 99,
                 },
                 {
                     id: 16,
-                    name: "大刘",
-                    score: 38
+                    name: "王依波",
+                    mathematics: 66,
+                    chinese: 44,
                 },
                 {
                     id: 199,
-                    name: "小小孙",
-                    score: 99
+                    name: "孙香巧",
+                    mathematics: 32,
+                    chinese: 65,
                 }
-            ],
-            // showTFoot:false
-            // rs: [1, 2, 3, 4]
-            // rs: [{
-            //         dim_id: 1,
-            //         dim_name: "22",
-            //         dim_level: "22",
-            //         dim_type: "222"
-            //     },
-            //     {
-            //         dim_id: 1,
-            //         dim_name: "哈哈哈",
-            //         dim_level: "22",
-            //         dim_type: "222"
-            //     }
-            // ]
+            ]
         }
 
 

@@ -179,7 +179,7 @@ _package("_", this, function () {
         },
         append: function (el, child) {
             var _createTextNode = function (t) {
-                if (_.indexOf(["string", "number", "date","nan"], _.type(t)) >= 0) {
+                if (_.indexOf(["string", "number", "date", "nan","undefined"], _.type(t)) >= 0) {
                     t = document.createTextNode(t)
                 }
                 return t
@@ -238,7 +238,8 @@ _package("_", this, function () {
             }
             var len = arguments.length
             if (len === 3) {
-                _set(el, key, val)
+                // _set(el, key, val)
+                _.exe(_set, el, key, val)
             } else if (len == 2) {
                 if (_.type(key) === "object") {
                     var options = key
@@ -251,6 +252,7 @@ _package("_", this, function () {
             }
         },
         has: function (el, prop) {
+            if (!el) return;
             return el.hasAttribute(prop)
         },
         remove: function (el, prop) {
@@ -262,12 +264,17 @@ _package("_", this, function () {
                     el.parentNode.removeChild(el)
                 }
             }
-            if (_.type(el) === "nodelist") {
+            _.exe(_remove, el, prop)
+        },
+        exe: function (callback, el) {
+            var args = _.toArray(arguments);
+            if (["nodelist", "array"].indexOf(_.type(el)) >= 0) {
+                var arr = args.slice(2)
                 _.forEach(el, function (t) {
-                    _remove(t, prop)
+                    callback.apply(this, [t].concat(arr))
                 })
             } else {
-                _remove(el, prop)
+                callback.apply(this, args.slice(1))
             }
         },
         toggle: function (el, prop) {
@@ -293,7 +300,7 @@ _package("_", this, function () {
         map: function (arr, callback) {
             var arr2 = []
             for (var i = 0; i < arr.length; i++) {
-                arr2[arr2.length] = callback(arr[i])
+                arr2[arr2.length] = callback(arr[i],i)
             }
             return arr2;
         },
@@ -305,6 +312,14 @@ _package("_", this, function () {
                 }
             }
         },
+        //fast then Array.prototype.slice.call(arguments)
+        toArray: function (arrLike) {
+            var len = arrLike.length,
+                args = new Array(len);
+            while (len--) args[len] = arrLike[len];
+            return args
+        },
+
         fast: function () {
             var len = arguments.length,
                 args = new Array(len), //fast then Array.prototype.slice.call(arguments)
@@ -1157,9 +1172,10 @@ _package("event", _, function () {
         remove: function (type, listener) {
             var el = this.el;
             if (window.removeEventListener) {
-                el.removeEventListener(type, listener, {
-                    passive: false
-                }); //false
+                el.removeEventListener(type, listener); //false 
+                // , {
+                //     passive: false
+                // }
             } else {
                 el.detachEvent('on' + type, listener);
             }
@@ -1213,24 +1229,15 @@ _package("shortcut", _, function () {
         if (!(this instanceof Shortcut)) return new Shortcut(el, events, options);
         this.events = events;
         this.el = el || document;
-        var _this = this;
-        this.once = options ? options.once : false;
-        this.preventDefault = options ? options.preventDefault : false;
-
-
-        if (_.type(el) === "array") {
-            _.forEach(el, function (t) {
-                _this.bindEvent(t, events)
-            })
-        } else {
-            _this.bindEvent(el, events)
-        }
+        this.clear = options ? options.clear : false;
+        // this.preventDefault = options ? options.preventDefault : false;
+        _.exe.call(this,this.bindEvent,el, events)
     }
     return _.createClass(Shortcut, {
         bindEvent: function (el, events) {
             var _this = this;
-            if (this.once) {
-                this.clear();
+            if (this.clear) {
+                _.event(el).clear("keydown")
             }
             _.event(el, {
                 //keydown  keyup
@@ -1240,18 +1247,18 @@ _package("shortcut", _, function () {
                     keyCode = e.keyCode || e.which || e.charCode; //支持IE、FF 
                     for (var key in events) {
                         if (keyCode === keycodeMap[key]) {
-                            events[key] && events[key](e)
-                            if (_this.preventDefault) {
+                            // events[key] && events[key](e)
+                            if(!events[key](e)){
                                 e.preventDefault()
                             }
+                            // if (_this.preventDefault) {
+                            //     e.preventDefault()
+                            // }
                         }
                     }
 
                 }
             })
-        },
-        clear: function (el) {
-            _.event(el).clear("keydown")
         }
     })
 });
@@ -1623,6 +1630,16 @@ _package("grid", _, function () {
         this.offset = 0;
         if (this.config.check) this.offset++;
         if (this.config.seq) this.offset++;
+        this.css={
+            table:"dataintable",
+            fixedhead:"table-fixed-head",
+            fixedfoot:"table-fixed-foot",
+            fixedbody:"table-fixed-body",
+            icon:"icon",
+            text:"text",
+            number:"number",
+            string:"string"
+        }
         return this.grid = this._output()
     }
     return _.createClass(Grid, {
@@ -1700,17 +1717,17 @@ _package("grid", _, function () {
                             _.div(_.table([cols, thead], {
                                 tablename: tname
                             }), {
-                                "class": "table-fixed-head"
+                                "class": this.css.fixedhead
                             }),
                             _.div(_.table([cols.cloneNode(true), tbody], {
                                 tablename: tname
                             }), {
-                                "class": "table-fixed-body"
+                                "class": this.css.fixedbody
                             }),
                             _.div(_.table([cols.cloneNode(true), tfoot], {
                                 tablename: tname
                             }), {
-                                "class": "table-fixed-foot"
+                                "class": this.css.fixedfoot
                             })
                         ], {
                             "class": "dataintable",
@@ -1730,7 +1747,7 @@ _package("grid", _, function () {
                             "class": "table-fixed-body"
                         })
                     ], {
-                        "class": "dataintable",
+                        "class": this.css.table,
                         tablename: tname
                     })
                     break;
@@ -1738,7 +1755,7 @@ _package("grid", _, function () {
                     return _.div([_.table([colgroup, thead, tbody, tfoot], {
                         tablename: tname
                     }), optPanel], {
-                        "class": "dataintable",
+                        "class": this.css.table,
                         tablename: tname
                     }, {
                         click: function (e) {
@@ -1779,7 +1796,7 @@ _package("grid", _, function () {
             var typs = this.typs;
             var offset = this.offset;
             var count = this.count
-            var cell = typs.map(function (t, j) {
+            var cell = _.map(typs,function (t, j) {
                 var typ = t; //typs[j]
                 var fmt = fmts[j]
                 var prop = props[j]
@@ -1811,7 +1828,7 @@ _package("grid", _, function () {
                     prop: prop
                 });
             });
-            if (config.seq) cell.unshift(_.td(i === 0 ? "#" : i));
+            if (config.seq) cell.unshift(_.td((i+1) ));
             if (config.check) cell.unshift(_.td(_.checkbox()));
             return _.tr(cell, {
                 rowid: i
@@ -1826,7 +1843,7 @@ _package("grid", _, function () {
             var fmts = this.fmts;
             var props = this.props;
             var thead =
-                tbl.map(function (t) {
+                _.map(tbl,function (t) {
                     var typ = t.type ? t.type : "string";
                     var fmt = t.format ? t.format : "";
                     var lable = t.label ? t.label : t;
@@ -1846,9 +1863,9 @@ _package("grid", _, function () {
                         props.push(prop)
                     }
                     return hide ? "" : _.th([_.div(lable, {
-                        "class": "text"
+                        "class": _this.css.text
                     }), _.div("", {
-                        "class": "icon"
+                        "class": _this.css.icon
                     })], {
                         "class": typ,
                         prop: prop,
@@ -1897,8 +1914,8 @@ _package("grid", _, function () {
                 count === 0 ? _.createEle("tr td", "未查到记录", {
                     colspan: tbl.length + offset
                 }) :
-                rs.map(function (r, i) {
-                    return _this._row(r, i + 1)
+                _.map(rs,function (r, i) {
+                    return _this._row(r, i ) //+ 1
                 });
 
             this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
@@ -1931,12 +1948,10 @@ _package("grid", _, function () {
             _.set(th, "seq", seq === "asc" ? "desc" :
                 "asc")
             _this.rs.sort(_.sortBy(prop, seq === "asc", typ))
-
             _this._flash();
-
         },
-        _flash:function(){
-            var _this=this;
+        _flash: function () {
+            var _this = this;
             var tbody = _this._tbody();
             var oldTbody = _.query("tbody", _this.grid)
             _.replace(oldTbody, tbody)
@@ -1969,7 +1984,7 @@ _package("grid", _, function () {
             }), _.btn("取消", {}, {
                 click: function (e) {
                     var el = e.target,
-                        table = _.closest(el, ".dataintable");
+                        table = _.closest(el, "."+this.css.table);
                     var cbs = _.queryAll(
                         "input[type='checkbox']:checked", table);
                     _.forEach(cbs, function (t) {
@@ -1997,15 +2012,84 @@ _package("grid", _, function () {
             var th = _.closest(el, "th");
             var prop = _.get(th, "prop");
             var tds = _.queryAll("td[prop='" + prop + "']", this.grid);
-            tds && _.forEach(tds, function (t) {
-                _.set(t, "active", "")
-            })
+            _.set(tds, "active", "")
         },
         activeCell: function (el) {
             this.inactiveCell()
             var td = _.closest(el, "td");
             if (td && ["string", "number"].indexOf(td.className) >= 0)
                 _.set(td, "active", "");
+        },
+        moveActiveCell: function (direction) {
+            var grid = _.query(".dataintable[active] tbody")
+            var tr = _.query("tr[active]", grid); // || _.query("tr:last-child", grid)
+            if (!tr) return;
+            // console.log(document.activeElement)
+            if(_.has(document.activeElement,"contenteditable")){
+                return true;
+            }
+            var cell = _.query("td[active]", grid)
+            _.remove([tr, cell], "active");
+            var rowid = _.get(tr, "rowid");
+            var prop = _.get(cell, "prop");
+            var newTr, newCell;
+            switch (direction) {
+                case "up":
+                    newTr = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
+                    newCell = _.query("td[prop='" + prop + "']", newTr)
+                    break;
+                case "down":
+                    newTr = _.query("tr[rowid='" + (Number(rowid) + 1) + "']", grid)
+                    newCell = _.query("td[prop='" + prop + "']", newTr)
+                    break;
+                case "left":
+                    newTr = tr;
+                    newCell = cell.previousSibling;
+                    break;
+                case "right":
+                    newTr = tr;
+                    newCell = cell.nextSibling;
+                    break;
+            }
+            if (newTr && newCell) {
+                _.set([newTr, newCell], "active", "")
+            }
+            return false;  //preventDefault
+        },
+        updateActiveCell: function () {
+            var grid = _.query("."+this.css.table+"[active]")
+            var cell = _.query("td[active]", grid)
+            if (!cell) return;
+            if (_.has(cell, "update")) {
+                return
+            }
+            var val = cell.innerText
+            var prop = _.get(cell, "prop")
+            // var input = _.input(val, {
+            //     name: prop
+            // })
+            var input = _.divInput(val, {
+                name: prop
+            })
+            cell.innerText = "";
+            _.append(cell, input)
+            _.set(cell, "update", "")
+            setTimeout(function () {
+                input.focus();
+                input.value = '';
+                input.value = val;
+            }, 0)
+        },
+        saveUpdateCell: function () {
+            var grid = _.query("."+this.css.table+"[active]")
+            var cell = _.query("td[active]", grid)
+            // var input = _.query("input", cell)
+            var input = _.query("div[contenteditable]", cell)
+            if (cell && input) {
+                this.setCellValue(cell, input.innerText)
+            }
+            _.remove(cell, "update");
+
         },
         inactiveCell: function () {
             var td = _.queryAll("td[active]", this.grid);
@@ -2041,7 +2125,7 @@ _package("grid", _, function () {
             _.event(document.body, {
                 click: function (e) {
                     var el = e.target;
-                    var oldGrid = _.queryAll(".dataintable[active]")
+                    var oldGrid = _.queryAll("."+_this.css.table+"[active]")
                     _.remove(oldGrid, "active")
                     var grid = _.closest(el, ".dataintable")
                     _.set(grid, "active", "")
@@ -2049,82 +2133,29 @@ _package("grid", _, function () {
             })
             _.shortcut(document, {
                 enter: function (e) {
-                    var grid = _.query(".dataintable[active]")
+                    var grid = _.query("."+_this.css.table+"[active]")
                     var cell = _.query("td[active]", grid)
-                    // var input = _.query("input", cell)
-                    var input = _.query("div[contenteditable]", cell)
-                    if (cell && input) {
-                        // cell.innerText = input.innerText
-                        _this.setCellValue(cell, input.innerText)
+                    if (_.has(cell, "update")) {
+                        _this.saveUpdateCell.call(_this);
+                    } else {
+                        _this.updateActiveCell.call(_this);
                     }
-                    // cell.innerText = input.value;
-                    _.remove(cell, "update");
                 },
                 leftarrow: function (e) {
-                    var grid = _.query(".dataintable[active]")
-                    var cell = _.query("td[active]", grid)
-                    if (!cell) return;
-                    if (_.has(cell, "update")) {
-                        return
-                    }
-                    var val = cell.innerText
-                    var prop = _.get(cell, "prop")
-                    // var input = _.input(val, {
-                    //     name: prop
-                    // })
-                    var input = _.divInput(val, {
-                        name: prop
-                    })
-                    cell.innerText = "";
-                    _.append(cell, input)
-                    _.set(cell, "update", "")
-                    setTimeout(function () {
-                        input.focus();
-                        input.value = '';
-                        input.value = val;
-                    }, 0)
+                    _this.moveActiveCell("left")
+                },
+                rightarrow: function () {
+                    _this.moveActiveCell("right")
                 },
                 uparrow: function (e) {
-                    var grid = _.query(".dataintable[active] tbody")
-                    var tr = _.query("tr[active]", grid) ;//|| _.query("tr:last-child", grid)
-                    if (!tr) return;
-                    var rowid = _.get(tr, "rowid");
-
-                    var cell = _.query("td[active]", grid)
-                    var prop = _.get(cell, "prop")
-
-                    _.remove(tr, "active")
-                    _.remove(cell, "active")
-
-
-                    var newRow = _.query("tr[rowid='" + (Number(rowid) - 1) + "']", grid)
-                    if (newRow) {
-                        _.set(newRow, "active", "")
-                        var newCell = _.query("td[prop='" + prop + "']", newRow)
-                        _.set(newCell, "active", "")
-                    }
+                    _this.moveActiveCell("up")
                 },
                 downarrow: function (e) {
-                    var grid = _.query(".dataintable[active] tbody")
-                    var tr = _.query("tr[active]", grid) ;//|| _.query("tr", grid)
-                    if (!tr) return;
-                    var rowid = _.get(tr, "rowid");
-
-                    var cell = _.query("td[active]", grid)
-                    var prop = _.get(cell, "prop")
-
-                    _.remove(tr, "active")
-                    _.remove(cell, "active")
-                    var newRow = tr.nextSibling;
-                    if (newRow) {
-                        _.set(newRow, "active", "")
-                        var newCell = _.query("td[prop='" + prop + "']", newRow)
-                        _.set(newCell, "active", "")
-                    }
+                    _this.moveActiveCell("down")
                 }
             }, {
-                once: true,
-                preventDefault: true
+                clear: true
+                // preventDefault: true
             })
         }
     })
@@ -2770,8 +2801,8 @@ _package("websql", _, function () {
                 len === 0 ? _.wrap("tr td", "未查到记录", {
                     colspan: tbl.length + offset
                 }) :
-                rs.map(function (r, i) {
-                    return _row(r, i + 1)
+                _.map(rs,function (r, i) {
+                    return _row(r, i )//+ 1
                 }).join("");
 
             tfoot = tfoot.map(function (t) {
