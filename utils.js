@@ -1780,14 +1780,12 @@ _package("grid", _, function () {
             //定义列宽
             var tbl = this.tbl;
             var offset = this.offset
-            var config = this.config
             var defWidth = (100 - 5 * offset) / tbl.length + "%"
             var colgroup = tbl.map(function (t) {
                 return _.col("", {
                     style: "width: " + (t.width ? t.width : defWidth) + ";"
                 })
             })
-
             this._col(colgroup, {
                 seq: _.col("", {
                     style: "width: 5%;"
@@ -1803,8 +1801,6 @@ _package("grid", _, function () {
         },
         _row: function (r, i) {
             var _this = this;
-            var config = this.config;
-            var tfoot = this.tfoot;
             var props = this.props;
             var fmts = this.fmts;
             var typs = this.typs;
@@ -1826,11 +1822,12 @@ _package("grid", _, function () {
                 //计算
                 switch (typ) {
                     case "number":
-                        var colIndex = j + offset;
+                        var colIndex = j
+                        // var colIndex = j + offset;
                         rowStatistic += parseFloat(val);
                         //数据行累加计算
                         if (i > 0 && val) {
-                            tfoot[colIndex] += parseFloat(val);
+                            _this.tfoot[colIndex] += parseFloat(val);
                         }
                         //最后一行，处理小数
                         if (i === count) {
@@ -1848,9 +1845,6 @@ _package("grid", _, function () {
                 }
                 return _td(val, typ, prop)
             });
-            // if (config.seq) cell.unshift(_.td((i + 1)));
-            // if (config.check) cell.unshift(_.td(_.checkbox()));
-            // if (config.rowStatistic) cell.push(_td(rowStatistic, "number", "rowStatistic"))
 
             this._col(cell, {
                 seq: _.td((i + 1)),
@@ -1936,7 +1930,7 @@ _package("grid", _, function () {
             var typs = this.typs;
             var tbl = this.tbl;
             var props = this.props;
-            var tfoot = [];
+            // var tfoot = [];
             //代替  Array.fill
             // for (var i = 0; i < offset; i++) {
             //     tfoot.push("")
@@ -1948,14 +1942,15 @@ _package("grid", _, function () {
             // if (config.rowStatistic) this.tfoot.push("");
 
 
-            this.tfoot=_.map(typs,function (t, i) {
-                return i === 0 ? "合计" : t === "number" ? 0 : "";
+            this.tfoot = _.map(typs, function (t, i) {
+                // return i === 0 ? "合计" : t === "number" ? 0 : "";
+                return t === "number" ? 0 : "";
             })
-            this._col( this.tfoot,{
-                seq:"",
-                check:"",
-                rowStatistic:""
-            })
+            // this._col( this.tfoot,{
+            //     seq:"",
+            //     check:"",
+            //     rowStatistic:""
+            // })
 
             var tbody =
                 count === 0 ? _.createEle("tr td", "未查到记录", {
@@ -1965,12 +1960,29 @@ _package("grid", _, function () {
                     return _this._row(r, i) //+ 1
                 });
 
-                this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
+
+            // this._col(this.tfoot, {
+            //     seq: "",
+            //     check: "",
+            //     rowStatistic: "",
+            // })
+
+            var total=0
+            this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
+                total+=Number(t);
                 return _.td(t, {
                     "class": t === "" ? "string" : "number",
                     prop: i >= offset ? props[i - offset] : ""
                 });
             }) : "";
+
+            this._col( this.tfoot,{
+                seq:_.td(""),
+                check:_.td("合计"),
+                rowStatistic:_.td(total,{
+                    "class":"number"
+                }),
+            })
             //滚动条占位
             // this.tfoot.push(_.td(""))
             this.tfoot = _.tfoot(this.tfoot);
@@ -2193,7 +2205,7 @@ _package("grid", _, function () {
                     }
                 },
                 leftarrow: function (e) {
-                   return _this.moveActiveCell("left")
+                    return _this.moveActiveCell("left")
                 },
                 rightarrow: function () {
                     return _this.moveActiveCell("right")
