@@ -12,6 +12,43 @@
             font-family: Cambria, Arial;
             background: #333;
         }
+
+        #dialog {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none;
+        }
+
+        #dialog .wrap {
+            width: 400px;
+            height: 200px;
+            background: #fff;
+            border-radius: 10px;
+        }
+
+        #dialog .wrap h2 {
+            height: 40px;
+            line-height: 40px;
+            background: #ccc;
+            display: flex;
+            justify-content: space-between;
+
+        }
+
+        #dialog .wrap h2 .icon:hover {
+            cursor: pointer;
+            color: bisque
+        }
+
+        #tname_input {
+            border: 1px solid #ccc;
+            height: 100px;
+        }
     </style>
 </head>
 
@@ -23,8 +60,8 @@
         <label for="one">grid</label>
 
         <!-- <input id="two" name="tabs" type="radio" value="Two"> -->
-        <label for="two">result</label>
-        <label for="three">表结构</label>
+        <label for="two">sql</label>
+        <label for="three">json</label>
 
         <div class="panels">
 
@@ -44,7 +81,7 @@
                 </p>
             </div>
             <div class="panel" id="three">
-                <h2>表结构</h2>
+                <h2>json数据结构 </h2>
                 <p>
                     <div class="sqlcmd">
                         <div contentEditable="plaintext-only" class="tablestructure"></div>
@@ -55,70 +92,139 @@
         </div>
 
     </article>
+    <div id="dialog">
+        <div class="wrap">
+            <h2>请输入表名 <i class="icon" id="closBtn">close</i> </h2>
+            <p>
+                <div contentEditable="plaintext-only" id="tname_input"></div>
+            </p>
+            <div class="btn" id="confirmBtn">确认</div>
+        </div>
+
+    </div>
 
     <script src="utils.js"></script>
     <script>
         // INSERT INTO 订货2019秋冬(专卖店,料号,品名,规格,属性,出厂价,起订量,数量,金额) VALUES('高新婚庆馆','M02012','宫？王的荣耀-K06','180cm×200cm','婚庆水星',1200,0,2,2400);
+        var dialog = _.query("#dialog");
+
+        var sqlParse = function (tbl) {
+            tbl = tbl || "test"
+
+            var htmlarea = _.query(".htmlarea")
+            var html = htmlarea.innerHTML
+
+            //去掉table无关属性
+            html = html.replace(/<(\/?)([a-zA-Z]+)[^><]*>/g, function (m, sprit, tag) {
+                if (["colgroup", "col"].indexOf(tag) > -1) {
+                    return ""
+                }
+                return sprit ? "<" + sprit + tag + ">" : "<" + tag + ">"
+            })
+            htmlarea.innerHTML = html
+
+            var flds = []
+            var sqlArr = []
+            var index = 0
+            // var tbl = "test"
+            var columns = [];
+            var data = []
+            html.replace(/<tr>([\s\S]*?)<\/tr>/g, function (m, row) {
+                var vals = []
+
+                if (index === 0) { //第一行作为表字段
+
+                    row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
+                        flds.push(td)
+
+                        columns.push({
+                            prop: td,
+                            label: td,
+                            type: "string"
+                        });
+                        // columns.push(JSON.stringify({
+                        //     prop: td,
+                        //     label: td,
+                        //     type: "string"
+                        // }))
+                    });
+                    // console.log(tbl)
+                    var sql = _.strtpl("CREATE TABLE IF NOT EXISTS ${tbl}(${flds})", {
+                        tbl: tbl,
+                        flds: flds
+                    })
+                    console.log(sql)
+
+                    sqlArr.push(sql)
+
+                    // _.append(".tablestructure", JSON.stringify(columns))
+                    // var tablestructure = _.query(".tablestructure")
+                    // tablestructure.innerHTML = columns.join("\n")//JSON.stringify(columns)
+                } else {
+                    var item={}
+                    var i=0;
+                    row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
+                        // vals.push("'" + td + "'")
+
+                        if (_.type(Number(td)) === "number") {
+                            // columns[i].type="number"
+                            vals.push(Number(td))
+                            columns[i].type = "number"
+                        } else {
+                            vals.push("'" + td + "'")
+                        }
+                        item[columns[i].prop] = td
+                        i++;
+                    })
+
+
+
+                    if (vals.length > 0) {
+                        // var item = {}
+                        // _.forEach(vals, function (t, i) {
+                        //     if (_.type(t) === "number") {
+                        //         columns[i].type = "number"
+                        //     }
+                        //     item[columns[i].prop] = t
+                        // })
+                        data.push(item)
+
+
+                        sqlArr.push(_.strtpl("insert into ${tbl}(${flds}) values(${vals})", {
+                            tbl: tbl,
+                            flds: flds,
+                            vals: vals
+                        }))
+                    }
+                }
+                index++;
+            })
+            var textarea = _.query(".textarea")
+            textarea.innerHTML = sqlArr.join(";\n")
+
+            var struc = {
+                tname: tbl,
+                columns: columns,
+                data: data
+            }
+
+            var tablestructure = _.query(".tablestructure");
+            // tablestructure.innerHTML = _.map(columns, function (t) {
+            //     return JSON.stringify(t) + "\n";
+            // })
+
+            // tablestructure.innerHTML = JSON.stringify(struc)
+            tablestructure.innerHTML = _.stringify(struc);
+
+        }
+
 
         var btn = _.btn("解析", {}, {
             click: function () {
-                var htmlarea = _.query(".htmlarea")
-                var html = htmlarea.innerHTML
-
-                //去掉table无关属性
-                html = html.replace(/<(\/?)([a-zA-Z]+)[^><]*>/g, function (m, sprit, tag) {
-                    if (["colgroup", "col"].indexOf(tag) > -1) {
-                        return ""
-                    }
-                    return sprit ? "<" + sprit + tag + ">" : "<" + tag + ">"
+                _.css(dialog, {
+                    display: "flex"
                 })
-                htmlarea.innerHTML = html
 
-                var flds = []
-                var sqlArr = []
-                var index = 0
-                var tbl = "test"
-                html.replace(/<tr>([\s\S]*?)<\/tr>/g, function (m, row) {
-                    var vals = []
-
-                    if (index === 0) { //第一行作为表字段
-                        var columns = [];
-                        row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
-                            flds.push(td)
-                            columns.push(JSON.stringify({
-                                prop: td,
-                                label: td,
-                                type: "string"
-                            }))
-                        });
-                        console.log(tbl)
-                        var sql = _.strtpl("CREATE TABLE IF NOT EXISTS ${tbl}(${flds})", {
-                            tbl: tbl,
-                            flds: flds
-                        })
-                        console.log(sql)
-
-                        sqlArr.push(sql)
-
-                        // _.append(".tablestructure", JSON.stringify(columns))
-                        var tablestructure = _.query(".tablestructure")
-                        tablestructure.innerHTML = columns.join("\n")//JSON.stringify(columns)
-                    } else {
-                        row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
-                            vals.push("'" + td + "'")
-                        })
-                        if (vals.length > 0) {
-                            sqlArr.push(_.strtpl("insert into ${tbl}(${flds}) values(${vals})", {
-                                tbl: tbl,
-                                flds: flds,
-                                vals: vals
-                            }))
-                        }
-                    }
-                    index++;
-                })
-                var textarea = _.query(".textarea")
-                textarea.innerHTML = sqlArr.join(";\n")
             }
         })
 
@@ -140,6 +246,30 @@
                         display: "block"
                     })
                 }
+            }
+        })
+
+        var closBtn = _.query("#closBtn")
+        _.event(closBtn, {
+            click: function (e) {
+
+                _.css(dialog, {
+                    display: "none"
+                })
+
+            }
+        })
+
+        var confirmBtn = _.query("#confirmBtn")
+        _.event(confirmBtn, {
+            click: function () {
+                _.css(dialog, {
+                    display: "none"
+                })
+
+                var tname = _.query("#tname_input").innerText;
+
+                sqlParse(tname)
             }
         })
     </script>

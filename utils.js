@@ -554,12 +554,80 @@ _package("_", this, function () {
                 "class": "btn-group"
             }, props), events)
         },
-        stringify: function (el) {
-            var str = el.tagName.toLowerCase();
-            str += el.id ? "#" + el.id : "";
-            str += el.className ? "." + el.className.replace(/\s+/g, ".") : "";
+        // stringify: function (el) {
+        //     var str = el.tagName.toLowerCase();
+        //     str += el.id ? "#" + el.id : "";
+        //     str += el.className ? "." + el.className.replace(/\s+/g, ".") : "";
+        //     return str;
+        // },
+        stringify: function (obj, ownProperty) {
+            var str = "";
+            var qt = "'"; //"\""
+
+            switch (_.type(obj)) {
+                case "undefined":
+                    str = "undefined";
+                    break;
+                case "boolean":
+                    str = obj.valueOf() ? "true" : "false"
+                    break;
+                case "string":
+                    str = qt + obj + qt
+                    break;
+                case "number":
+                    break;
+                case "htmldocument":
+                    str = "#document";
+                    break;
+                case "array":
+                    str = "[" + obj.map(function (t) {
+                        return _.stringify(t);
+                    }) + "]";
+                    break;
+                case "mouseevent":
+                    str = "MouseEvent";
+                    str += "(" + _.stringify(obj.target) + ")"
+                    break;
+                case "touchevent":
+                    str = "TouchEvent";
+                    str += "(" + _.stringify(obj.target) + ")"
+                    break;
+                case "null":
+                    str = "null";
+                    break;
+                case "date":
+                    str = _.time(obj).format();
+                    break;
+                case "object":
+                    var sb = [];
+                    for (var k in obj) {
+                        if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                            sb.push(qt + k + qt + ":");
+                            sb.push(_.stringify(obj[k]));
+                            sb.push(",");
+                            // sb.push("\n");
+                        }
+                    }
+                    sb.pop();
+                    str = "{" + sb.join('') + "}";
+                    break;
+                case "infinity":
+                    str = "Infinity";
+                    break;
+                default:
+                    if (_.isDOM(obj)) {
+                        str = el.tagName.toLowerCase();
+                        str += el.id ? "#" + el.id : "";
+                        str += el.className ? "." + el.className.replace(/\s+/g, ".") : "";
+                    } else {
+                        str = "unknowtype";
+                    }
+
+                    break;
+            }
             return str;
         },
+
         inStyle: function (obj) {
             return ["width", "height", "top", "left"].map(function (t) {
                 return obj[t] ? t + ":" + obj[t] : null
@@ -2317,9 +2385,9 @@ _package("websql", _, function () {
                     var flds = tbls[t].map(function (t) {
                         return (t.prop ? t.prop : t) + (t.pk ? " unique" : "");
                     });
-                    var sql = _.strtpl("CREATE TABLE IF NOT EXISTS ${t}(${flds})",{
-                        t:t,
-                        flds:flds
+                    var sql = _.strtpl("CREATE TABLE IF NOT EXISTS ${t}(${flds})", {
+                        t: t,
+                        flds: flds
                     })
                     console.log(sql)
                     _this.sqls.push({
@@ -2361,10 +2429,10 @@ _package("websql", _, function () {
                     });
                     _this.sqls.push({
                         tbl: tbl,
-                        sql: _.strtpl("INSERT INTO ${tbl}(${flds}) values(${vs})",{
-                            tbl:tbl,
-                            flds:flds,
-                            vs:vs
+                        sql: _.strtpl("INSERT INTO ${tbl}(${flds}) values(${vs})", {
+                            tbl: tbl,
+                            flds: flds,
+                            vs: vs
                         })
                     })
                     // tx.executeSql(sql, vs, function (tx, result) {
@@ -2388,8 +2456,8 @@ _package("websql", _, function () {
             _this.sqls = []
             for (var t in tbls) {
                 _this.sqls.push({
-                    sql: _.strtpl("DELETE FROM ${t}",{
-                        t:t
+                    sql: _.strtpl("DELETE FROM ${t}", {
+                        t: t
                     }),
                     tbl: t
                 })
@@ -2415,9 +2483,9 @@ _package("websql", _, function () {
             // });
         },
         del: function (tbl, ids) {
-            var sql = _.strtpl("DELETE FROM ${tbl} Where rowid in [${ids}]",{
-                tbl:tbl,
-                ids:ids
+            var sql = _.strtpl("DELETE FROM ${tbl} Where rowid in [${ids}]", {
+                tbl: tbl,
+                ids: ids
             })
 
             this.exe({
@@ -2439,8 +2507,8 @@ _package("websql", _, function () {
             _this.sqls = []
             for (var t in tbls) {
                 _this.sqls.push({
-                    sql: _.strtpl("drop table ${t}",{
-                        t:t
+                    sql: _.strtpl("drop table ${t}", {
+                        t: t
                     }),
                     tbl: t
                 })
@@ -2472,9 +2540,9 @@ _package("websql", _, function () {
             _this.sqls = tbls.map(function (t) {
                 return {
                     tbl: t,
-                    sql: _.strtpl("SELECT * FROM ${t} ${condition}",{
-                        t:t,
-                        condition:condition
+                    sql: _.strtpl("SELECT * FROM ${t} ${condition}", {
+                        t: t,
+                        condition: condition
                     })
                 }
             })
