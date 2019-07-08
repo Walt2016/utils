@@ -236,13 +236,9 @@
             tbls: tbls,
             data: data,
         })
-        // console.log(ws)
-        var tools=document.querySelector(".tools")
-        tools.appendChild(ws.createBtns());
-        tools.appendChild(ws.createSqlcmd())
-        // tools.appendChild(ws.createExeSqlHistory())
-        var demo=document.querySelector(".demo")
-        demo.appendChild(ws.createSlide())
+        _.append(".tools",ws.createBtns())
+        _.append(".tools",ws.createSqlcmd())
+        _.append(".demo",ws.createSlide())
     </script>
 </body>
 

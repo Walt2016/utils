@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CMD</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        body {
+            font-family: Cambria, Arial;
+            background: #333;
+        }
+    </style>
+</head>
+
+<body>
+
+    <article class="tabs">
+
+        <!-- <input checked id="one" name="tabs" type="radio"> -->
+        <label for="one">grid</label>
+
+        <!-- <input id="two" name="tabs" type="radio" value="Two"> -->
+        <label for="two">result</label>
+        <label for="three">表结构</label>
+
+        <div class="panels">
+
+            <div class="panel" id="one" active>
+                <h2>从excel复制粘贴表格在这里</h2>
+                <div class="htmlcmd">
+                    <div contentEditable="true" class="htmlarea"></div>
+                </div>
+            </div>
+
+            <div class="panel" id="two">
+                <h2>sql输出结果</h2>
+                <p>
+                    <div class="sqlcmd">
+                        <div contentEditable="plaintext-only" class="textarea"></div>
+                    </div>
+                </p>
+            </div>
+            <div class="panel" id="three">
+                <h2>表结构</h2>
+                <p>
+                    <div class="sqlcmd">
+                        <div contentEditable="plaintext-only" class="tablestructure"></div>
+                    </div>
+                </p>
+            </div>
+
+        </div>
+
+    </article>
+
+    <script src="utils.js"></script>
+    <script>
+        // INSERT INTO 订货2019秋冬(专卖店,料号,品名,规格,属性,出厂价,起订量,数量,金额) VALUES('高新婚庆馆','M02012','宫？王的荣耀-K06','180cm×200cm','婚庆水星',1200,0,2,2400);
+
+        var btn = _.btn("解析", {}, {
+            click: function () {
+                var htmlarea = _.query(".htmlarea")
+                var html = htmlarea.innerHTML
+
+                //去掉table无关属性
+                html = html.replace(/<(\/?)([a-zA-Z]+)[^><]*>/g, function (m, sprit, tag) {
+                    if (["colgroup", "col"].indexOf(tag) > -1) {
+                        return ""
+                    }
+                    return sprit ? "<" + sprit + tag + ">" : "<" + tag + ">"
+                })
+                htmlarea.innerHTML = html
+
+                var flds = []
+                var sqlArr = []
+                var index = 0
+                var tbl = "test"
+                html.replace(/<tr>([\s\S]*?)<\/tr>/g, function (m, row) {
+                    var vals = []
+
+                    if (index === 0) { //第一行作为表字段
+                        var columns = [];
+                        row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
+                            flds.push(td)
+                            columns.push(JSON.stringify({
+                                prop: td,
+                                label: td,
+                                type: "string"
+                            }))
+                        });
+                        console.log(tbl)
+                        var sql = _.strtpl("CREATE TABLE IF NOT EXISTS ${tbl}(${flds})", {
+                            tbl: tbl,
+                            flds: flds
+                        })
+                        console.log(sql)
+
+                        sqlArr.push(sql)
+
+                        // _.append(".tablestructure", JSON.stringify(columns))
+                        var tablestructure = _.query(".tablestructure")
+                        tablestructure.innerHTML = columns.join("\n")//JSON.stringify(columns)
+                    } else {
+                        row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
+                            vals.push("'" + td + "'")
+                        })
+                        if (vals.length > 0) {
+                            sqlArr.push(_.strtpl("insert into ${tbl}(${flds}) values(${vals})", {
+                                tbl: tbl,
+                                flds: flds,
+                                vals: vals
+                            }))
+                        }
+                    }
+                    index++;
+                })
+                var textarea = _.query(".textarea")
+                textarea.innerHTML = sqlArr.join(";\n")
+            }
+        })
+
+        _.append(".htmlcmd", btn)
+
+        var tabs = _.query(".tabs")
+        _.event(tabs, {
+            click: function (e) {
+                // console.log(e.target)
+                var el = e.target
+                var no = _.get(el, "for");
+                if (no) {
+                    var ps = _.queryAll(".panels .panel")
+                    _.css(ps, {
+                        display: "none"
+                    })
+                    var panel = _.query("#" + no)
+                    _.css(panel, {
+                        display: "block"
+                    })
+                }
+            }
+        })
+    </script>
+
+</body>
+
+</html>

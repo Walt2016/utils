@@ -830,12 +830,17 @@ input:checked+label {
 
 .tabs .panel {
     width: 100%;
-    opacity: 0;
+    /* opacity: 0; */
     position: absolute;
     background: #fff;
     border-radius: 0 10px 10px 10px;
     padding: 4%;
     box-sizing: border-box;
+    display: none
+}
+
+.tabs .panel[active]{
+    display:block
 }
 
 .tabs .panel h2 {

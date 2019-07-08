@@ -266,6 +266,9 @@ _package("_", this, function () {
             }
             _.exe(_remove, el, prop)
         },
+        clone: function (el) {
+            return el.cloneNode(true);
+        },
         exe: function (callback, el) {
             var args = _.toArray(arguments);
             if (["nodelist", "array"].indexOf(_.type(el)) >= 0) {
@@ -311,6 +314,16 @@ _package("_", this, function () {
                     return i
                 }
             }
+        },
+        //模板字符串，兼容ie
+        strtpl: function (str, obj) {
+            return str.replace(/\${(.*?)}/g, function (a, m) {
+                try {
+                    return obj ? obj[m] : eval(m)
+                } catch (e) {
+                    return m
+                }
+            })
         },
         //fast then Array.prototype.slice.call(arguments)
         toArray: function (arrLike) {
@@ -401,13 +414,17 @@ _package("_", this, function () {
 
             if (len === 2) {
                 if (_.type(opt) === "object") {
-                    for (var key in opt) {
-                        // css()
-                        var val = opt[key];
-                        val = autounit(key, val)
-                        el.style[key] = val;
-                        // autoprefixer.call(el, key, val);
-                    }
+
+                    _.exe(function (el) {
+                        for (var key in opt) {
+                            // css()
+                            var val = opt[key];
+                            val = autounit(key, val)
+                            el.style[key] = val;
+                            // autoprefixer.call(el, key, val);
+                        }
+                    }, el)
+
                 }
             } else if (len === 3) {
                 // prop, val
@@ -1615,8 +1632,8 @@ _package("grid", _, function () {
         if (!(this instanceof Grid)) return new Grid(options);
         this.config = _.extend(this.getGridConfig(), options)
         this.tname = options.tname || ""
-        this.tbl = options.tbl || []
-        this.rs = options.rs || []
+        this.columns = options.columns || []
+        this.data = options.data || []
         this.events = options.events || {};
         this.count = this.length;
         this.outputType = options.outputType
@@ -1637,7 +1654,8 @@ _package("grid", _, function () {
             icon: "icon",
             text: "text",
             number: "number",
-            string: "string"
+            string: "string",
+            date: "date"
         }
         return this.grid = this._output()
     }
@@ -1723,18 +1741,18 @@ _package("grid", _, function () {
                             }), {
                                 "class": this.css.fixedhead
                             }),
-                            _.div(_.table([cols.cloneNode(true), tbody], {
+                            _.div(_.table([_.clone(cols), tbody], {
                                 tablename: tname
                             }), {
                                 "class": this.css.fixedbody
                             }),
-                            _.div(_.table([cols.cloneNode(true), tfoot], {
+                            _.div(_.table([_.clone(cols), tfoot], {
                                 tablename: tname
                             }), {
                                 "class": this.css.fixedfoot
                             })
                         ], {
-                            "class": "dataintable",
+                            "class": this.css.table,
                             tablename: tname
                         })
 
@@ -1743,12 +1761,12 @@ _package("grid", _, function () {
                         _.div(_.table([cols, thead], {
                             tablename: tname
                         }), {
-                            "class": "table-fixed-head"
+                            "class": this.css.fixedhead
                         }),
                         _.div(_.table([cols.cloneNode(true), tbody, tfoot], {
                             tablename: tname
                         }), {
-                            "class": "table-fixed-body"
+                            "class": this.css.fixedbody
                         })
                     ], {
                         "class": this.css.table,
@@ -1778,10 +1796,10 @@ _package("grid", _, function () {
         },
         _colGroup: function () {
             //定义列宽
-            var tbl = this.tbl;
+            var columns = this.columns;
             var offset = this.offset
-            var defWidth = (100 - 5 * offset) / tbl.length + "%"
-            var colgroup = tbl.map(function (t) {
+            var defWidth = (100 - 5 * offset) / columns.length + "%"
+            var colgroup = columns.map(function (t) {
                 return _.col("", {
                     style: "width: " + (t.width ? t.width : defWidth) + ";"
                 })
@@ -1838,7 +1856,7 @@ _package("grid", _, function () {
                         break;
                     case "date":
                         t = [_.createEle("i", "", {
-                            "class": "date"
+                            "class": _this.css.date
                         }), fmt ? _time(val).format(fmt) : val]
 
                         break;
@@ -1858,7 +1876,7 @@ _package("grid", _, function () {
         },
         _thead: function () {
             var _this = this;
-            var tbl = this.tbl;
+            var columns = this.columns;
             var config = this.config;
             var orderby = config.orderby || "";
             var typs = this.typs;
@@ -1880,7 +1898,7 @@ _package("grid", _, function () {
                 });
             }
             var thead =
-                _.map(tbl, function (t) {
+                _.map(columns, function (t) {
                     var typ = t.type ? t.type : "string";
                     var fmt = t.format ? t.format : "";
                     var lable = t.label ? t.label : t;
@@ -1923,64 +1941,38 @@ _package("grid", _, function () {
         },
         _tbody: function () {
             var _this = this;
-            var rs = this.rs;
+            var data = this.data;
             var config = this.config;
             var count = this.count;
             var offset = this.offset;
             var typs = this.typs;
-            var tbl = this.tbl;
+            var columns = this.columns;
             var props = this.props;
-            // var tfoot = [];
-            //代替  Array.fill
-            // for (var i = 0; i < offset; i++) {
-            //     tfoot.push("")
-            // }
-
-            // this.tfoot = tfoot.concat(typs).map(function (t, i) {
-            //     return i === 0 ? "合计" : t === "number" ? 0 : "";
-            // });
-            // if (config.rowStatistic) this.tfoot.push("");
-
-
             this.tfoot = _.map(typs, function (t, i) {
-                // return i === 0 ? "合计" : t === "number" ? 0 : "";
                 return t === "number" ? 0 : "";
             })
-            // this._col( this.tfoot,{
-            //     seq:"",
-            //     check:"",
-            //     rowStatistic:""
-            // })
-
             var tbody =
                 count === 0 ? _.createEle("tr td", "未查到记录", {
-                    colspan: tbl.length + offset
+                    colspan: columns.length + offset
                 }) :
-                _.map(rs, function (r, i) {
+                _.map(data, function (r, i) {
                     return _this._row(r, i) //+ 1
                 });
 
-
-            // this._col(this.tfoot, {
-            //     seq: "",
-            //     check: "",
-            //     rowStatistic: "",
-            // })
-
-            var total=0
+            var total = 0
             this.tfoot = config.showTFoot ? this.tfoot.map(function (t, i) {
-                total+=Number(t);
+                total += Number(t);
                 return _.td(t, {
                     "class": t === "" ? "string" : "number",
                     prop: i >= offset ? props[i - offset] : ""
                 });
             }) : "";
 
-            this._col( this.tfoot,{
-                seq:_.td(""),
-                check:_.td("合计"),
-                rowStatistic:_.td(total,{
-                    "class":"number"
+            this._col(this.tfoot, {
+                seq: _.td(""),
+                check: _.td("合计"),
+                rowStatistic: _.td(total, {
+                    "class": this.css.number
                 }),
             })
             //滚动条占位
@@ -2006,15 +1998,16 @@ _package("grid", _, function () {
             })
             _.set(th, "seq", seq === "asc" ? "desc" :
                 "asc")
-            _this.rs.sort(_.sortBy(prop, seq === "asc", typ))
+            _this.data.sort(_.sortBy(prop, seq === "asc", typ))
             _this._flash();
         },
         _flash: function () {
+            var grid = _.query("." + this.css.table + "[active]")
             var _this = this;
             var tbody = _this._tbody();
-            var oldTbody = _.query("tbody", _this.grid)
+            var oldTbody = _.query("tbody", grid)
             _.replace(oldTbody, tbody)
-            var oldTfoot = _.query("tfoot", _this.grid)
+            var oldTfoot = _.query("tfoot", grid)
             _.replace(oldTfoot, _this.tfoot)
         },
         _optPanel: function () {
@@ -2022,23 +2015,32 @@ _package("grid", _, function () {
             var optPanel = _.div([_.btn("删除", {}, {
                 click: function (e) {
                     var el = e.target,
-                        table = _.closest(el, ".dataintable");
+                        table = _.closest(el, "." + _this.css.table);
                     var cbs = _.queryAll(
                         "tbody input[type='checkbox']:checked",
                         table);
                     var tablename = _.get(table, "tablename")
                     var sqls = []
+
+                    var rowids = [];
                     _.forEach(cbs, function (t) {
                         //  sql=`delete from ${tablename} where id=`
                         var tr = _.closest(t, "tr")
                         var rowid = _.get(tr, "rowid")
-                        sqls.push({
-                            tbl: tbl,
-                            // sql: `delete from ${tablename} where rowid=${rowid}`
-                        })
+                        rowids.push(Number(rowid))
                     })
-                    _this.events.del && _this.events.del(sqls);
-                    // _this.emit("setSqlcmd",sqls)
+
+                    var _del = function (arr, indexs) {
+                        var arr2 = []
+                        for (var i = 0; i < arr.length; i++) {
+                            if (indexs.indexOf(i) == -1) {
+                                arr2.push(arr[i])
+                            }
+                        }
+                        return arr2;
+                    }
+                    _this.data = _del(_this.data, rowids)
+                    _this._flash();
                 }
             }), _.btn("取消", {}, {
                 click: function (e) {
@@ -2080,7 +2082,7 @@ _package("grid", _, function () {
                 _.set(td, "active", "");
         },
         moveActiveCell: function (direction) {
-            var grid = _.query(".dataintable[active] tbody")
+            var grid = _.query("." + this.css.table + "[active]")
             var tr = _.query("tr[active]", grid); // || _.query("tr:last-child", grid)
             if (!tr) return true;
             // console.log(document.activeElement)
@@ -2172,7 +2174,7 @@ _package("grid", _, function () {
             cell.innerText = value
             var rowid = _.get(_.closest(cell, "tr"), "rowid");
             var prop = _.get(cell, "prop")
-            this.rs[rowid][prop] = value
+            this.data[rowid][prop] = value
             //update tfoot
             // this.grid=_.closest(cell,".dataintable")
 
@@ -2218,7 +2220,6 @@ _package("grid", _, function () {
                 }
             }, {
                 clear: true
-                // preventDefault: true
             })
         }
     })
@@ -2316,8 +2317,10 @@ _package("websql", _, function () {
                     var flds = tbls[t].map(function (t) {
                         return (t.prop ? t.prop : t) + (t.pk ? " unique" : "");
                     });
-                    // var sql = `CREATE TABLE IF NOT EXISTS ${t}(${flds})`
-                    var sql = "CREATE TABLE IF NOT EXISTS ${t}(${flds})".replace("${t}", t).replace("${flds}", flds)
+                    var sql = _.strtpl("CREATE TABLE IF NOT EXISTS ${t}(${flds})",{
+                        t:t,
+                        flds:flds
+                    })
                     console.log(sql)
                     _this.sqls.push({
                         tbl: t,
@@ -2358,8 +2361,11 @@ _package("websql", _, function () {
                     });
                     _this.sqls.push({
                         tbl: tbl,
-                        // sql: `INSERT INTO ${tbl}(${flds}) values(${vs})`
-                        sql: "INSERT INTO ${tbl}(${flds}) values(${vs})".replace("${tbl}", tbl).replace("${flds}", flds).replace("${vs}", vs)
+                        sql: _.strtpl("INSERT INTO ${tbl}(${flds}) values(${vs})",{
+                            tbl:tbl,
+                            flds:flds,
+                            vs:vs
+                        })
                     })
                     // tx.executeSql(sql, vs, function (tx, result) {
                     //     console.log("insert ok")
@@ -2382,8 +2388,9 @@ _package("websql", _, function () {
             _this.sqls = []
             for (var t in tbls) {
                 _this.sqls.push({
-                    // sql: `DELETE FROM ${t}`,
-                    sql: "DELETE FROM ${t}".replace("${t}", t),
+                    sql: _.strtpl("DELETE FROM ${t}",{
+                        t:t
+                    }),
                     tbl: t
                 })
             }
@@ -2408,8 +2415,10 @@ _package("websql", _, function () {
             // });
         },
         del: function (tbl, ids) {
-            // var sql = `DELETE FROM ${tbl} Where rowid in [${ids}]`
-            var sql = "DELETE FROM ${tbl} Where rowid in [${ids}]".replace("${tbl}", tbl).replace("${ids}", ids)
+            var sql = _.strtpl("DELETE FROM ${tbl} Where rowid in [${ids}]",{
+                tbl:tbl,
+                ids:ids
+            })
 
             this.exe({
                 sql: sql,
@@ -2430,8 +2439,9 @@ _package("websql", _, function () {
             _this.sqls = []
             for (var t in tbls) {
                 _this.sqls.push({
-                    // sql: `drop table ${t}`,
-                    sql: "drop table ${t}".replace("${t}", t),
+                    sql: _.strtpl("drop table ${t}",{
+                        t:t
+                    }),
                     tbl: t
                 })
             }
@@ -2462,8 +2472,10 @@ _package("websql", _, function () {
             _this.sqls = tbls.map(function (t) {
                 return {
                     tbl: t,
-                    // sql: `SELECT * FROM ${t} ${condition}`
-                    sql: "SELECT * FROM ${t} ${condition}".replace("${t}", t).replace("${condition}", condition)
+                    sql: _.strtpl("SELECT * FROM ${t} ${condition}",{
+                        t:t,
+                        condition:condition
+                    })
                 }
             })
             this.exe(_this.sqls, callback)
@@ -2581,11 +2593,9 @@ _package("websql", _, function () {
                             _this.toggleHd(tname)
                             var actLis = _.queryAll(".slide .hd li[active]")
                             if (actLis) {
-                                var tbls = []
-                                actLis.forEach(function (t) {
-                                    tbls.push(t.innerText);
-                                })
-                                _this.createList(tbls)
+                                _this.createList(_.map(actLis, function (t) {
+                                    return t.innerText
+                                }))
                             }
                         } else {
                             _this.createList([tname])
@@ -2707,12 +2717,11 @@ _package("websql", _, function () {
             var _this = this;
             var tbls = tbls || []
             bd.innerHTML = "";
-            _this.list(tbls, options || {}, function (rs, tname) {
-                // bd.appendChild(_.li(_this.createGrid(tname, rs, options)))
+            _this.list(tbls, options || {}, function (data, tname) {
                 bd.appendChild(_.li(_.grid(_.extend({
                     tname: tname,
-                    rs: rs,
-                    tbl: _this.tbls[tname],
+                    data: data,
+                    columns: _this.tbls[tname],
                     events: {
                         del: _this.setSqlcmd
                     }
@@ -2986,11 +2995,10 @@ _package("websql", _, function () {
                             _this.exe({
                                 sql: t,
                                 tbl: tname
-                            }, function (rs, tbl) {
-                                // bd.appendChild(_.li(_this.createGrid(tbl, rs, options)))
+                            }, function (data, columns) {
                                 bd.appendChild(_.li(_.grid(_.extend({
-                                    tbl: tbl,
-                                    rs: rs,
+                                    columns: columns,
+                                    data: data,
                                     events: {
                                         del: _this.setSqlcmd
                                     }
@@ -4157,8 +4165,6 @@ _package("storage", _, function () {
         }
 
 
-
-
         //IE中使用 userData 代替localStorage
         //IE8开始支持localStorage ,但必须在服务器环境才有效
         //扩展window对象，模拟原生localStorage输入输出
@@ -4237,99 +4243,6 @@ _package("storage", _, function () {
     console.log(localStorage)
 
 
-    // define(function(){
-    //     if('localStorage' in window) return;
-    //     function Storage(){
-    //         this.box = document.body || document.getElementByTagName('head')[0] || document.documentElement;
-    //         this.name = 'localStorage'
-    //         this.data = document.createElement(this.name);
-    //         this.data.addBehavior("#default#userData");
-    //         this.box.appendChild(this.data);
-    //         this.map = [];
-    //         this.length = this.length();
-    //     }
-    //     Storage.prototype.setItem = function(name,val){
-    //         if(name=='localStorage-map'){
-    //             throw new Error("this is localStorage in key [localStorage-map] not use!")
-    //             return ;
-    //         }
-    //         if(this.map.length==0){
-    //             this.data.load('localStorage-map');
-    //             var data = this.data.getAttribute('localStorage-map');
-    //             if(data!=null){
-    //                 this.map = data.split(',');
-    //             }
-    //         }
-    //         var flag = true;
-    //         for(var i in this.map){
-    //             if(this.map[i] == name){
-    //                 flag = false;
-    //             }
-    //         }
-    //         if(flag){
-    //             this.map.push(name)
-    //         }
-    //         this.data.setAttribute(name,val);
-    //         var date = new Date();
-    //         date.setDate(date.getDate()+700);
-    //         this.data.expires = date.toUTCString();
-    //         this.data.save(name);
-    //         this.data.setAttribute('localStorage-map',this.map);
-    //         this.data.save('localStorage-map');
-    //     }
-    //     Storage.prototype.getItem = function(name){
-    //         if(name == 'localStorage-map'){
-    //             throw new Error("this is localStorage in key [localStorage-map] not use!");
-    //             return;
-    //         }
-    //         this.data.load(name);
-    //         return this.data.getAttribute(name);
-    //     };
-    //     Storage.prototype.length = function(){
-    //         if(this.map.length==0){
-    //             this.data.load('localStorage-map');
-    //             var data = this.data.getAttribute('localStorage-map');
-    //             if(data!=null){
-    //                 this.map = data.split(',');
-    //             }
-    //         }
-    //         for (var i = this.map.length - 1; i >= 0; i--) {
-    //             alert(this.getItem(this.map[i]))
-    //             if(this.getItem(this.map[i])==undefined || this.getItem(this.map[i])==""){
-    //                 this.map.splice(i,1);
-    //             }
-    //         }
-    //         return this.map.length;
-    //     };
-    //     Storage.prototype.removeItem = function(name){
-    //         if(typeof name=="undefined" || name=="") return;
-    //         if(this.map.length==0){
-    //             if(this.getItem('localStorage-map')!=null){
-    //                 this.map = this.getItem('localStorage-map').split(',');
-    //             }
-    //         }
-    //         for(var i in this.map){
-    //             if(this.map[i] == name){
-    //                 this.map.splice(i,1);
-    //             }
-    //         }
-    //         this.data.load(name);
-    //         this.data.setAttribute(name,undefined);
-    //         this.data.save(name);
-    //         return true;
-    //     },
-    //     Storage.prototype.clear=function(){
-    //         if(this.map.length==0){
-    //             if(this.getItem('localStorage-map')!=null){
-    //                 this.map = this.getItem('localStorage-map').split(',');
-    //             }
-    //         }
-    //         for(var i in this.map){
-    //             this.removeItem(this.map[i]);
-    //         }
-    //     }
-    //     window.localStorage = new Storage();
-    // });
 
 
     function Storage(options) {

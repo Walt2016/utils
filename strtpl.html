@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="utils.js"></script>
+    <script>
+        var tbls = {
+            a: 1,
+            b: 2
+        }
+        var sqls = []
+        for (var t in tbls) {
+            sqls.push({
+                // sql: `DELETE FROM ${t}`,
+                // sql: "DELETE FROM ${t}".replace("${t}", t),
+                sql: _.strtpl("DELETE FROM ${t}"),
+                tbl: t
+            })
+
+            // _.strtpl("DELETE FROM ${t}"),
+        }
+
+        console.log(sqls)
+
+
+        // var tbl
+    </script>
+</body>
+
+</html>
