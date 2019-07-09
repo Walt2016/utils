@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        body {
+            padding: 30px;
+            font-family: "微软雅黑";
+        }
+
+        li {
+            list-style: none;
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        #selector {
+            position: relative;
+            height: 30px;
+            width: 510px;
+            margin-left: 100px;
+            margin-top: 100px;
+            font-size: 13px;
+            line-height: 30px;
+            text-align: left;
+            user-select: none;
+        }
+
+        #selector select {
+            display: none;
+        }
+
+        #selector .arrow {
+            position: absolute;
+            right: 5px;
+            top: 12px;
+            display: block;
+            height: 0;
+            width: 0;
+            border-top: 8px solid lightgreen;
+            border-right: 5px solid transparent;
+            border-left: 5px solid transparent;
+        }
+
+        #selector .mr-selector {
+            display: block;
+            height: 30px;
+            width: 500px;
+            padding-left: 10px;
+            border: 1px solid lightgreen;
+            cursor: default;
+            overflow: hidden;
+        }
+
+        #selector .select {
+            display: none;
+            width: 510px;
+            margin-top: -1px;
+            border: 1px solid lightgreen;
+        }
+
+        #selector .select li {
+            height: 30px;
+            line-height: 30px;
+            padding-left: 10px;
+        }
+    </style>
+    <!-- <link rel="stylesheet" href="xuankuang/iconfont.css" />
+    <link rel="stylesheet" href="xuankuang/demo.css" /> -->
+    <!-- <script src="js/jquery-1.11.0.min.js"></script> -->
+    <script src="utils.js"></script>
+    <title>带多选框的下拉列表</title>
+</head>
+
+<body>
+    <div id="selector">
+        <span class="mr-selector">请选择选项</span>
+        <span class="arrow"></span>
+        <ul class="select">
+            <li><i id="ki1" class="icon iconfont icon-duoxuankuang">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i>请选择选项</li>
+            <li><i class="icon iconfont icon-duoxuankuang">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i>选项内容一</li>
+            <li><i class="icon iconfont icon-duoxuankuang">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i>选项内容二</li>
+            <li><i class="icon iconfont icon-duoxuankuang">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i>选项内容三</li>
+            <li><i class="icon iconfont icon-duoxuankuang">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i>选项内容四</li>
+        </ul>
+    </div>
+    <script>
+        (function () {
+
+            var $ = _.query;
+            var selector = $("#selector");
+            var select = $("#selector .select"); //模拟select的ul选项
+            var mrSelector = $("#selector .mr-selector");
+            var li = _.queryAll("#selector .select li"); //li选项
+
+            _.click(selector, function (eve) {
+                eve.stopPropagation(); //阻止冒泡避免点击后消失    
+            })
+
+
+            _.click(mrSelector, function () {
+                _.toggle(select)
+            })
+
+            _.click(li,  function (eve) {
+                    var ttt =mrSelector.innerText // $(mrSelector).text();
+                    // var index = $(this).index();
+                    // eee = $(this).find('i').attr("class");
+                    var icon=_.query("i",this)
+                    var eee=icon.className;
+                    var index =_.index(this);
+                    
+                    if (eee == "icon iconfont icon-duoxuankuang") {
+                        // $(this).find('i').attr("class", "icon iconfont icon-duoxuankuang2");
+                        _.set(icon,"class", "icon iconfont icon-duoxuankuang2");
+                        if (index == 0) {
+                            var text =this.innerText; // $(this).text();
+                            mrSelector.innerText=ttt
+                            // mrSelector.text(ttt);
+                        } else if (index != 0) {
+                            var text = ttt + this.innerText ;//$(this).text();
+                            mrSelector.innerText=text
+                            // mrSelector.text(text);
+                        }
+                    } else if (eee == "icon iconfont icon-duoxuankuang2") {
+                        // $(this).find('i').attr("class", "icon iconfont icon-duoxuankuang");
+
+                        _.set(icon,"class", "icon iconfont icon-duoxuankuang");
+                    }
+                }
+            )
+
+
+
+            _.click(document.body, function () {
+                _.css(select, {
+                    display: "none"
+                })
+            })
+        }());
+    </script>
+</body>
+
+</html>

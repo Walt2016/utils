@@ -76,9 +76,6 @@ _package("_", this, function () {
         },
         //全局鼠标事件
         globalClick: function (callback) {
-            // _.removeEvent("click", document); //先删除   ，最后绑定一次有效
-            // _.addEvent("click", document, callback)
-
             _.event(document, {
                 click: callback,
             })
@@ -261,7 +258,7 @@ _package("_", this, function () {
                 if (prop) {
                     el.removeAttribute(prop)
                 } else if (_.isDOM(el)) {
-                    el.parentNode.removeChild(el)
+                    el.parentNode && el.parentNode.removeChild(el)
                 }
             }
             _.exe(_remove, el, prop)
@@ -282,10 +279,22 @@ _package("_", this, function () {
         },
         toggle: function (el, prop) {
             if (!el) return;
-            if (_.has(el, prop)) {
-                _.remove(el, prop)
+            if (prop) {
+                if (_.has(el, prop)) {
+                    _.remove(el, prop)
+                } else {
+                    _.set(el, prop)
+                }
             } else {
-                _.set(el, prop)
+                if (_.isShow(el)) {
+                    _.css(el, {
+                        display: "none"
+                    })
+                } else {
+                    _.css(el, {
+                        display: "block"
+                    })
+                }
             }
         },
         //兼容IE ，nodeList.forEach
@@ -442,6 +451,15 @@ _package("_", this, function () {
         isHide: function (el) {
             el = _.isDOM(el) ? el : _.query(el);
             return el.offsetWidth <= 0 && el.offsetHeight <= 0;
+        },
+        index: function (el) {
+            var index = -1
+            _.forEach(el.parentNode.children, function (t, i) {
+                if (t === el) {
+                    index = i
+                }
+            })
+            return index
         },
         //创建DOm 方式
         //ie 8中
@@ -1073,13 +1091,15 @@ _package("_", this, function () {
             }
             _.removeClass(el, "show")
             _.addClass(el, "hide")
+
+            // _.css(select, {
+            //     display: "none"
+            // })
         },
         click: function (el, callback) {
-            // _.addEvent("click", el, callback)
-
-            _.event({
+            _.event(el, {
                 click: callback
-            }, el)
+            })
         },
         hasClass: function (el, cls) {
             var arr = el.className.split(" ")
@@ -1698,6 +1718,9 @@ _package("nav", _, function () {
 _package("grid", _, function () {
     function Grid(options) {
         if (!(this instanceof Grid)) return new Grid(options);
+        if (_.type(options) === "array") {
+            return this._simpleGrid(options)
+        }
         this.config = _.extend(this.getGridConfig(), options)
         this.tname = options.tname || ""
         this.columns = options.columns || []
@@ -1714,6 +1737,8 @@ _package("grid", _, function () {
         this.offset = 0;
         if (this.config.check) this.offset++;
         if (this.config.seq) this.offset++;
+
+
         this.css = {
             table: "dataintable",
             fixedhead: "table-fixed-head",
@@ -1728,6 +1753,21 @@ _package("grid", _, function () {
         return this.grid = this._output()
     }
     return _.createClass(Grid, {
+        _simpleGrid: function (arr2) {
+            var trs = _.map(arr2, function (arr) {
+                if (_.type(arr) == "array") {
+                    var tds = _.map(arr, function (t) {
+                        return _.td(t)
+                    })
+                    return _.tr(tds)
+                } else {
+                    return _.tr(_.td(arr))
+                }
+            })
+            return _.div(_.table(trs), {
+                "class": "dataintable"
+            })
+        },
         getGridConfig: function () {
             var gridConfig = [{
                     label: "显示字段别名",
@@ -1777,6 +1817,7 @@ _package("grid", _, function () {
             })
             return config
         },
+       
         _output: function () {
             var _this = this;
             this.shortcut();
@@ -1799,6 +1840,9 @@ _package("grid", _, function () {
                     break;
                 case "tfoot":
                     return tfoot;
+                    break;
+                case "headless":
+                    return _.table(tbody)
                     break;
                 case "fixedhead":
                     var cols = colgroup
@@ -1831,7 +1875,7 @@ _package("grid", _, function () {
                         }), {
                             "class": this.css.fixedhead
                         }),
-                        _.div(_.table([cols.cloneNode(true), tbody, tfoot], {
+                        _.div(_.table([_.clone(cols), tbody, tfoot], {
                             tablename: tname
                         }), {
                             "class": this.css.fixedbody
@@ -1867,7 +1911,7 @@ _package("grid", _, function () {
             var columns = this.columns;
             var offset = this.offset
             var defWidth = (100 - 5 * offset) / columns.length + "%"
-            var colgroup = columns.map(function (t) {
+            var colgroup = _.map(columns, function (t) {
                 return _.col("", {
                     style: "width: " + (t.width ? t.width : defWidth) + ";"
                 })

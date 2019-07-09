@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    
+</head>
+
+<body>
+    <ul>
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+    </ul>
+    <script src="utils.js"></script>
+    <script>
+        // var _index = function (el) {
+        //     console.log(el.parentNode.children)
+        //     var index = -1
+        //     _.forEach(el.parentNode.children, function (t, i) {
+        //         if (t === el) {
+        //             index = i
+        //         }
+        //     })
+        //     return index
+        // }
+        var ul = _.query("ul")
+        _.click(ul, function (e) {
+            var el = e.target
+            console.log(el)
+            console.log(_.index(el))
+
+        })
+    </script>
+</body>
+
+</html>
