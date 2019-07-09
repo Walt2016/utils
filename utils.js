@@ -1718,6 +1718,17 @@ _package("nav", _, function () {
 _package("grid", _, function () {
     function Grid(options) {
         if (!(this instanceof Grid)) return new Grid(options);
+        this.css = {
+            table: "dataintable",
+            fixedhead: "table-fixed-head",
+            fixedfoot: "table-fixed-foot",
+            fixedbody: "table-fixed-body",
+            icon: "icon",
+            text: "text",
+            number: "number",
+            string: "string",
+            date: "date"
+        }
         if (_.type(options) === "array") {
             return this._simpleGrid(options)
         }
@@ -1738,22 +1749,12 @@ _package("grid", _, function () {
         if (this.config.check) this.offset++;
         if (this.config.seq) this.offset++;
 
-
-        this.css = {
-            table: "dataintable",
-            fixedhead: "table-fixed-head",
-            fixedfoot: "table-fixed-foot",
-            fixedbody: "table-fixed-body",
-            icon: "icon",
-            text: "text",
-            number: "number",
-            string: "string",
-            date: "date"
-        }
         return this.grid = this._output()
     }
     return _.createClass(Grid, {
+        
         _simpleGrid: function (arr2) {
+            var _this=this;
             var trs = _.map(arr2, function (arr) {
                 if (_.type(arr) == "array") {
                     var tds = _.map(arr, function (t) {
@@ -1765,7 +1766,7 @@ _package("grid", _, function () {
                 }
             })
             return _.div(_.table(trs), {
-                "class": "dataintable"
+                "class": _this.css.table
             })
         },
         getGridConfig: function () {
