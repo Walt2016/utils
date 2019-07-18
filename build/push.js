@@ -13,7 +13,7 @@ if (!shell.which('git')) {
 
 //并切换到对应目录。
 // shell.cp ('-r', './dist/*', '../../target');
-// shell.cd('../../Rychou');
+// shell.cd('../../target');
 
 shell.exec('git add .');
 shell.exec("git commit -m 'autocommit'")
