@@ -1,4 +1,5 @@
 var shell = require('shelljs');
+//前端部署自动化 自动提交到git
 //检查控制台是否以运行`git `开头的命令
 if (!shell.which('git')) {
     //在控制台输出内容
