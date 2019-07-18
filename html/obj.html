@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../utils.js"></script>
+    <script>
+        // 对象
+        _package("obj", _, function () {
+            function Obj(options) {
+                if (!(this instanceof Obj)) return new Obj(options);
+                this.obj = options;
+
+            }
+            return _.createClass(Obj, {
+                //对象取值   obj[a.b.c]
+                get: function (key) {
+                    var obj = this.obj;
+
+                    function _get(obj, keyArr) {
+                        if (_.type(obj) === "undefined" || keyArr.length === 0) return "";
+                        var key = keyArr.shift();
+                        return keyArr.length === 0 ? obj[key] : _get(obj[key], keyArr);
+                    }
+                    return _.type(key) === "array" ? _get(obj, key) : _get(obj, key.split("."));
+                },
+                //setVal(obj, "a.b.d", { a: 1 })
+                //setVal(obj, ["a","b","d"], 1 )
+                set: function (key, val) {
+                    var obj1 = this.obj;
+                    var _set = function (obj, keyArr, val, output) {
+                        var len = keyArr.length
+                        if (len === 0) return obj = val;
+                        if (len === 1) {
+                            obj[keyArr[0]] = val;
+                            return obj // output ||
+                        }
+                        var key = keyArr.shift();
+                        obj[key] = _.type(obj[key]) === "object" ? obj[key] : {};
+                        return _set(obj[key], keyArr, val, obj)
+                    }
+
+                    return _set(this.clone(obj1), _.type(key) === "array" ? key : key.split(
+                        "."), val, obj1)
+                    // return _.type(key) === "array" ? _set(obj, key, val, obj) : _set(obj, key.split(
+                    //     "."), val, obj);
+                },
+                clone:function(obj){
+                    return _.extend({},obj)
+                }
+
+            })
+        })
+
+        var obj = _.obj({
+            a: 1,
+            b: 2,
+            c: {
+                d: 3
+            }
+        })
+        _.echo(obj.get("a"))
+        _.echo(obj.get("c.d"))
+
+        // _.echo(obj.set("e", "eee"))
+        // _.echo(obj.set("b", "eee"))
+        _.echo(obj.set("b.f", "eee"))
+
+        // _.append(document.body,obj.get("a"))
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "utils.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "push": "node ./build/push.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Walt2016/utils.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Walt2016/utils/issues"
+  },
+  "homepage": "https://github.com/Walt2016/utils#readme",
+  "dependencies": {
+    "shelljs": "^0.8.3"
+  }
+}

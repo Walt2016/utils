@@ -178,6 +178,8 @@ _package("_", this, function () {
             var _createTextNode = function (t) {
                 if (_.indexOf(["string", "number", "date", "nan", "undefined"], _.type(t)) >= 0) {
                     t = document.createTextNode(t)
+                } else if (_.type(t) === "object") {
+                    t = document.createTextNode(_.stringify(t))
                 }
                 return t
             }
@@ -199,6 +201,9 @@ _package("_", this, function () {
                 el = _.query(el)
             }
             return _append(el, child)
+        },
+        echo: function (str) {
+            _.append(document.body, str)
         },
         replace: function (el, newEl) {
             el.parentNode.replaceChild(newEl, el)
@@ -1752,9 +1757,9 @@ _package("grid", _, function () {
         return this.grid = this._output()
     }
     return _.createClass(Grid, {
-        
+
         _simpleGrid: function (arr2) {
-            var _this=this;
+            var _this = this;
             var trs = _.map(arr2, function (arr) {
                 if (_.type(arr) == "array") {
                     var tds = _.map(arr, function (t) {
@@ -1818,7 +1823,7 @@ _package("grid", _, function () {
             })
             return config
         },
-       
+
         _output: function () {
             var _this = this;
             this.shortcut();

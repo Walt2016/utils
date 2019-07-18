@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="app">
+        <div>{{test}}</div>
+    </div>
+
+    <script src="../utils.js"></script>
+    <script>
+       
+
+
+
+        // //对象取值   obj[a.b.c]
+        // _.getVal = function (obj, key) {
+        //     function _getVal(obj, keyArr) {
+        //         if (_.isUndefined(obj) || keyArr.length === 0) return "";
+        //         var key = keyArr.shift();
+        //         return keyArr.length === 0 ? obj[key] : _getVal(obj[key], keyArr);
+        //     }
+        //     return _.isArray(key) ? _getVal(obj, key) : _getVal(obj, key.split("."));
+        // }
+        // //setVal(obj, "a.b.d", { a: 1 })
+        // //setVal(obj, ["a","b","d"], 1 )
+        // _.setVal = function (obj, key, val) {
+        //     var _setVal = function (obj, keyArr, val, output) {
+        //         if (keyArr.length === 0) return obj = val;
+        //         if (keyArr.length === 1) {
+        //             obj[keyArr[0]] = val;
+        //             return output || obj
+        //         }
+        //         var key = keyArr.shift();
+        //         obj[key] = _.isObject(obj[key]) ? obj[key] : {};
+        //         return _setVal(obj[key], keyArr, val, obj)
+        //     }
+        //     return _.isArray(key) ? _setVal(obj, key, val, obj) : _setVal(obj, key.split("."), val, obj);
+        // }
+        //模板标签  ([^|]+?[\|(string|file|image|time)]?     /{=([\s\S]+?)}/g; 
+        var reg_tpl_tag = /{=(.*?)(?:\|(.*?))?}/g,
+            reg_operation_symbol = /[\+|\-|\*|\/|\(|\)]+/g, //支持 加减乘除括号  operation symbol
+            rootEl, $index = 1,
+            $length = 1,
+            toucher,
+            customFilters = {}, //扩展类型
+            customSyntax = "", //书写语法   pre markdown  html text 文本格式类型
+            customMethods = {},
+            customDirectives = {},
+            templateConfig = {},
+            SYNTAX = "syntax",
+            GROUP = "group",
+            LAZY = "lazy",
+            MORE = "more",
+            DEFAULT = "default",
+            DATA = "data",
+            PAGESIZE = "pagesize",
+            KEYWORD = "keyword",
+            TEMPLATE = "template",
+            NOLOOP = "noloop",
+            LOOP = "loop",
+            MODEL = "model", //双向绑定模型
+            TAP = "tap",
+            LONGTAP = "longtap",
+            DRAG = "drag",
+            ON = "on", //绑定事件
+            BIND = "bind"; //单向绑定
+
+
+        //标准过滤器
+        var StandardFilters = {
+            string: function (val) {
+                if (_.isArray(val) || _.isObject(val)) val = _.stringify(val); // val = JSON.stringify(val);
+                return val;
+            },
+            //数组第一个
+            first: function (val) {
+                if (_.isArray(val)) val = val[0];
+                return val;
+            },
+            last: function (val) {
+                if (_.isArray(val)) val = val[val.length - 1];
+                return val;
+            },
+            pre: function (val) {
+                return _.preHtml(val);
+            },
+            //取整 四舍五入
+            int: function (val) {
+                return _.isNumber(+val) ? Math.round(+val) : val;
+            },
+            number: function (val) {
+                return +val;
+            },
+            wan: function (val) {
+                return +val > 10000 ? (+val / 10000).toFixed(1) + "万" : val;
+            },
+            fixed: function (val) {
+                return (+val).toFixed(1);
+            },
+            cent: function (val) {
+                return (+val / 100).toFixed(2);
+            },
+            percent: function (val) {
+                return Math.ceil(val * 100) + "%";
+            },
+            yearmonth: function (val) {
+                return (new Date(+val)).format("YYYY年MM月");
+            },
+            monthdaytime: function (val) {
+                return (new Date(+val)).format("MM月DD日 HH:mm");
+            },
+            datetime: function (val) {
+                return (new Date(+val)).format("YYYY-MM-DD HH:mm");
+            },
+            date: function (val) {
+                return (new Date(+val)).format("YYYY-MM-DD");
+            },
+            time: function (val) {
+                return (new Date(+val)).format("HH:mm");
+            },
+            //默认头像
+            avatar: function (val) {
+                return val ? ' style="background-image: url(' + val + ');"' : ''
+            },
+
+            file: function (val) {
+                ////文件加载  ajax加载 "/comein-files/" + val.substr(val.indexOf('Detail'), val.length)
+                return "<div data-file='" + val + "'></div>";
+            },
+            text: function (val) {
+                return _.escape(val)
+            },
+        };
+        ["markdown", "escape", "unescape"].forEach(function (t) {
+            StandardFilters[t] = function (val) {
+                return _[t](val);
+            }
+        });
+        ['round', 'ceil', 'floor'].forEach(function (t) {
+            StandardFilters[t] = function (val) {
+                return _.isNumber(+val) ? Math[t](+val) : val;
+            }
+        });
+        // pound: function() {
+        //                 return "#" + this;
+        //             },
+
+        // brackets: function(ele) {
+        //                 if (!ele) {
+        //                     return "[" + this.split(",").join("],[") + "]"; //"[" + this + "]";
+        //                 } else {
+        //                     var id;
+        //                     if (_.isElement(ele)) {
+        //                         _.autoid(ele);
+        //                         id = ele.id;
+        //                     } else if (_.isString(ele)) {
+        //                         id = ele;
+        //                     }
+        //                     // return "#" + id + "" + this.brackets() + "," + "#" + id + " " + this.brackets();
+        //                     var es = this.split(",");
+        //                     return "#" + id + "[" + es.join("],#" + id + "[") + "]" + "," + "#" + id + " [" + es.join("],#" + id + " [") + "]";
+        //                 }
+        //             },
+
+
+        //调用过滤器 
+        var callFilter = function (val, filter, data) {
+            if (filter) {
+                var self = this,
+                    _callFilter = function (val, filterName, data) {
+                        var _filter = customFilters[filterName];
+                        if (_.isUndefined(_filter)) {
+                            return val
+                        } else if (_.isFunction(_filter)) {
+                            val = _filter.call(self, val, data);
+                        } else {
+                            try {
+                                var fn = new Function("return (" + _filter + ".call(this,arguments[0]));");
+                                val = fn.call(self, val, data);
+                            } catch (e) {
+                                console.log(e);
+                                try {
+                                    var fn = new Function("data", "return (" + _filter + ");");
+                                    val = fn.call(self, val, data);
+                                } catch (e) {
+                                    console.log(e);
+                                    val = _filter;
+                                }
+                            }
+                        }
+                        return val;
+                    };
+
+                var fs = ("" + filter).split(","),
+                    len = fs.length;
+                if (len > 0 && fs[len - 1] !== "string") {
+                    fs.push("string");
+                }
+                fs.forEach(function (t) {
+                    val = _callFilter.call(self, val, t, data);
+                });
+            }
+            return val;
+        };
+
+        //preModel 预处理
+        // <div model="name">this is a  model </div>
+        //<div model="name">{=name} </div>
+        var regModel = /<[^>]+?model=\"(.*?)\".*?(>.*?<)\/[^>]+?>/gi
+        var regbind = /<[^>]+?bind=\"(.*?)\".*?(>.*?<)\/[^>]+?>/gi
+        var preModel = function (tpl) {
+            var matcher = new RegExp([
+                regModel.source,
+                regbind.source,
+            ].join('|') + '|$', 'gi');
+
+            return tpl.replace(matcher, function (match, name, text, name2, text2) {
+                name = name || name2;
+                text = text || text2;
+                return match.replace(text, ">{=" + name + "}<");
+            })
+        };
+
+        //解析模板标签
+        //{=name|filter}  /{=(.*?)(?:\|(.*?))?}/g
+        var parseTag = _.parseTag = function (tpl, data) {
+            var self = this;
+            return tpl.replace(reg_tpl_tag, function (match, name, filter) {
+                name = name.trim();
+                filter = (filter || "string").trim();
+                var val = "";
+                try {
+                    if (filter.indexOf("$") === 0) { //filter map
+                        // filter = eval("data." + filter.substr(1));   //replace("$", ""));
+                        filter = data[filter.substr(1)];
+                    }
+                    if ("$index" === name.toLowerCase()) {
+                        return $index++;
+                    } else if ("$length" === name.toLowerCase()) {
+                        return $length;
+                    } else if ("$this" === name.toLowerCase()) {
+                        val = data;
+                    } else if (reg_operation_symbol.test(name)) {
+                        val = data.cmd(name);
+                    } else {
+                        val = _.getVal(data, name);
+                    }
+                } catch (e) {
+                    console.log(e, data);
+                }
+                if (_.isUndefined(val)) val = "";
+                return val = callFilter.call(self, val, filter, data);
+            })
+        };
+        //解析模板
+        //tpl, data, syntax, groupTpl, lazyTpl, moreTpl, defaultTpl, loop
+        var parseTpl = _.parseTpl = function (cfg) {
+            var self = cfg || this,
+                tpl = self.tpl || getTpl(self.template),
+                groupTpl = self.groupTpl,
+                lazyTpl = self.lazyTpl,
+                moreTpl = self.moreTpl,
+                defaultTpl = self.defaultTpl,
+                loop = self.loop,
+                syntax = self.syntax,
+                data = self.data;
+
+            if (_.isEmpty(tpl) && _.isEmpty(groupTpl)) return "";
+            if (tpl) tpl = preModel(tpl);
+
+
+            $index = 1;
+            var str = "";
+            if (_.isUndefined(data)) {
+                $length = 0;
+                str = _.isUndefined(defaultTpl) ? tpl : defaultTpl;
+            } else if (_.isArray(data)) {
+                var $length = data.length;
+
+                var loopNumber = Number(loop) || $length; //循环次数 NaN
+                if ((moreTpl || lazyTpl) && loopNumber >= $length) loopNumber = 3;
+
+                var ps = [],
+                    lastGroup = "",
+                    currGroup = "";
+
+                for (var i = 0; i < $length; i++) {
+                    var item = data[i];
+                    if (!_.isUndefined(groupTpl)) { //分组模板
+                        currGroup = parseTag.call(self, groupTpl, item);
+                        if (currGroup !== lastGroup) {
+                            ps.push(currGroup);
+                        }
+                        lastGroup = currGroup;
+                    }
+
+                    if (i >= loopNumber) {
+                        if (!_.isUndefined(moreTpl)) { //更多模板
+                            ps.push(parseTag.call(self, moreTpl, item));
+                            break;
+                        }
+
+                        if (!_.isUndefined(lazyTpl)) { //懒加载
+                            ps.push(parseTag.call(self, lazyTpl, item));
+                        } else {
+                            break;
+                        }
+                    } else {
+                        if (tpl) ps.push(parseTag.call(self, tpl, item)); //模板
+                    }
+                }
+                str = ps.join('');
+            } else if (_.isObject(data)) {
+                $length = 1;
+                if (tpl) str = parseTag.call(self, tpl, data);
+            } else {
+                $length = 1;
+                str = tpl;
+            }
+            var syntax = syntax || customSyntax;
+            var syntaxMap = {
+                markdown: _.markdown,
+                pre: _.preHtml
+            }
+            return syntax in syntaxMap ? syntaxMap[syntax](str) : str;
+        };
+
+        //根据名称取得tpl
+        var getTpl = _.getTpl = function (tplId) {
+            if (tplId) {
+                var _tpl = _.query(tplId.pound());
+                return _tpl && _tpl.length > 0 ? _.text(_tpl).trim() : null;
+            }
+            return null;
+        }
+        //elment的tpl
+        var elTpl = function (name) {
+            var tpl, id;
+            if (_.hasAttr.call(this, name)) {
+                id = this.attr(name);
+                if (id === "this" || _.isEmpty(id)) {
+                    tpl = _.html(this).trim();
+                } else {
+                    tpl = getTpl(id);
+                }
+            }
+            return tpl;
+        };
+
+        //act : append html before 模板替换动作  默认是 html，模板内都替换
+        //解析节点
+        var parseEl = function () {
+            var self = this,
+                tpl, syntax, groupTpl, lazyTpl, moreTpl, defaultTpl, loop,
+                el = self.el,
+                data = self.data,
+                act = self.act,
+                keyword = self.keyword;
+            self.tpl = self.template || elTpl.call(el, TEMPLATE);
+            [GROUP, LAZY, MORE, DEFAULT].forEach(function (t) {
+                if (self.templates && !_.isUndefined(self.templates[t])) {
+                    self[t + "Tpl"] = self.templates[t];
+                } else {
+                    self[t + "Tpl"] = elTpl.call(el, t);
+                }
+            });
+            if (self.tpl) {
+                loop = "auto";
+            } else if (self.groupTpl) {
+
+            } else {
+                tpl = el.html();
+                loop = "1"; //非模板不循环
+                if (!reg_tpl_tag.test(tpl)) {
+                    parseDirective.call(self, el, data);
+                    return false;
+                }
+            }
+            if (_.hasAttr.call(el, SYNTAX)) syntax = el.attr(SYNTAX);
+            if (_.hasAttr.call(el, NOLOOP)) loop = "1"; //数组不循环
+            if (_.hasAttr.call(el, LOOP)) loop = el.attr(LOOP);
+            if (_.hasAttr.call(el, PAGESIZE)) loop = el.attr(PAGESIZE); //分页
+            if (_.hasAttr.call(el, DATA)) { //指定数据子对象
+                var child = el.attr(DATA);
+                // if (_.has(data, child)) data = eval("data." + child);
+                if (_.has(data, child)) data = data[child];
+            }
+            if (_.isArray(data)) { //数组
+                if (keyword && _.hasAttr.call(el, KEYWORD)) { //关键字查询
+                    var name = el.attr(KEYWORD);
+                    data = _.filter(data, function (item) {
+                        var ks = name.split(",")
+                        if (ks.length === 1) {
+                            return _.has(_.getVal(item, name), keyword);
+                        } else {
+                            var flag = false;
+                            ks.forEach(function (name) {
+                                if (_.has(_.getVal(item, name), keyword)) flag = true;
+                            });
+                            return flag;
+                        }
+
+                    });
+                }
+            }
+
+            //计算长度
+            if (_.isArray(data)) {
+                $length = data.length
+            } else if (_.isUndefined(data)) {
+                $length = 0;
+            } else if (_.isObject(data)) {
+                $length = 1;
+            } else {
+                $length = 1;
+            }
+
+            var tplConfig = _.clone(self, {
+                data: data,
+                loop: loop,
+                syntax: syntax,
+            });
+            var str = parseTpl.call(tplConfig);
+            switch (act) {
+                case "append":
+                    //兼容性处理
+                    // el = el.parentNode.lastElementChild || el.parentNode.lastChild;
+                    str = el.html() + str;
+                    break;
+                case "before":
+                    str += el.html();
+                default:
+                    break;
+            }
+            //如果tpl不是外部命名，区块dom内的html不需要重置,意味着之前通过dom操作获取的节点，在模板解析后还可以用。
+            if (self.tpl || el.attr(TEMPLATE) || el.attr(GROUP)) el.html(str);
+            parseDirective.call(self, el, data);
+        };
+
+        //标准指令
+        var StandardDirectives = {};
+
+        //指令解析
+        var parseDirective = function (elem, data) {
+            var self = this,
+                elemModel = elem.query(MODEL.brackets());
+            var onHandler = function (item, ev) {
+                if (_.isElement(this)) {
+                    var name = this.attr(ON),
+                        method = self.methods[name]; //每个独立methods
+                    method && _.isFunction(method) && method.call(self, this, ev);
+                }
+            };
+
+            var dragHandler = function () {
+                console.log("dragHandler");
+            }
+            StandardDirectives[ON] = onHandler;
+
+            var type;
+            _.each(StandardDirectives, function (fn, key) {
+                if (key === DRAG) {
+                    type = DRAG;
+                } else {
+                    type = TAP;
+                }
+                var el = _.$(key.brackets(elem));
+
+                if (ON !== key) {
+                    var customHandler = function (item, ev) {
+                        var method = self.methods["_on_" + key];
+                        if (method && _.isFunction(method)) {
+                            method.call(self, item, ev);
+                        }
+                    }
+                    toucher({
+                        el: el,
+                        type: type,
+                        clear: true,
+                        listener: customHandler
+                    });
+
+                } else {
+                    toucher({
+                        el: el,
+                        type: type,
+                        clear: true,
+                        listener: fn
+                    });
+                }
+            });
+
+            //双向数据绑定
+            elemModel && elemModel.length > 0 && elemModel.each(function (item, index) {
+                var name = this.attr(MODEL),
+                    v = _.query(this).val();
+                template.prototype[name] = v
+                var _result = _.clone(template.prototype);
+                Object.defineProperty(template.prototype, name, {
+                    set: function (newVal) { //监控数据被修改
+                        var oldVal = _result[name];
+                        _result[name] = newVal;
+                        if (newVal !== oldVal) {
+                            template.prototype.apply(name, newVal);
+                        }
+                    },
+                    get: function () {
+                        return _result[name];
+
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+            });
+
+            //model change 数据绑定
+            elemModel && elemModel.length > 0 && elemModel.on("keyup", function () {
+                var v = _.query(this).val(),
+                    name = this.attr(MODEL);
+                elem.query(MODEL.brackets()).html(v);
+                console.log(v, name);
+
+                template.prototype[name] = v;
+            });
+        };
+
+        _package("template", _, function () {
+            function Template(options) {
+                if (!(this instanceof Template)) return new Template(options);
+
+                for (var key in options) {
+                    var val = options[key];
+
+                    switch (key) {
+                        case "el":
+                            this.el = _.query(options.el);
+                            // if (_.isString(this.el)) this.el = _.query(this.selector = this.el);
+                            // if (_.isJQuery(this.el)) this.el = _.jqToEl(this.el, _.autoid);
+                            // if (_.isElement(this.el) || _.isArray(this.el) && _.size(this.el) > 0) {
+                            //     rootEl = this.el;
+                            // } else {
+                            //     console.log("not query el" + options.el)
+                            //     this.el = document.createElement("div");
+                            //     this.el.id = options.el.replace("#", "");
+                            //     if (options.template) {
+                            //         this.el.setAttribute("template", options.template.replace("#", ""))
+                            //     }
+                            //     if (options.container) {
+                            //         _.query(options.container).appendChild(this.el);
+                            //     } else {
+                            //         document.body.appendChild(this.el);
+                            //     }
+                            //     return false;
+                            // }
+                            // break;
+                        case "data":
+                            this.data = _.type(options.data) === "function" ? options.data() : options.data ||
+                                {};
+
+                            // if (_.isObject(this.data) || _.isArray(this.data)) {
+
+                            //     // try {
+                            //     //     console.log(this.data);
+                            //     //     var _result = _.clone(this.data);
+                            //     //     _.keys(this.data).forEach(function(key) {
+                            //     //         Object.defineProperty(this.data, key, {
+                            //     //             set: function(newVal) { //监控数据被修改
+                            //     //                 // var value=x;
+                            //     //                 console.log(_result[key], key);
+                            //     //                 var oldVal = _result[key];
+                            //     //                 console.log(this.data);
+                            //     //                 console.log("oldVal=" + oldVal);
+                            //     //                 _result[key] = newVal;
+                            //     //                 // result[key] = newVal;
+                            //     //                 console.log("newVal=" + newVal);
+                            //     //                 if (newVal != oldVal) {
+                            //     //                     this.apply(key, newVal);
+                            //     //                 }
+                            //     //             },
+                            //     //             get: function() {
+                            //     //                 console.log(_result[key], key);
+                            //     //                 return _result[key];
+                            //     //             },
+                            //     //             enumerable: true,
+                            //     //             configurable: true
+                            //     //         });
+
+                            //     //     })
+                            //     // } catch (e) {
+                            //     //     console.log(e);
+
+                            //     // }
+
+                            // } else {
+                            //     this.data = {};
+                            // }
+                            break;
+                        case "syntax":
+                            this.syntax = options.syntax; // customSyntax =
+                            break;
+                            // case "methods":
+                            //     this.methods = _.clone(customMethods, v);
+                            //     break;
+                        default:
+                            this[key] = val;
+                            break;
+                    }
+
+
+                }
+
+
+            }
+            return _.createClass(Template, {
+
+            })
+        })
+    </script>
+</body>
+
+</html>
