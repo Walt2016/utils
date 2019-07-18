@@ -9,10 +9,8 @@ const presets = [
                 safari: "11.1",
             },
             useBuiltIns: "usage",
-        },
-
-    ],
-
+        }
+    ]
 ];
 
 module.exports = {
