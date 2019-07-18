@@ -112,9 +112,9 @@ _package("_", this, function () {
             } else { //string
                 if (!el.parentNode) { //document  ie8不支持parentNode
                     return null
-                } else if (cls.indexOf(".") === 0 && _.indexOf(el.className.split(" "), cls.substring(1)) >= 0) {
+                } else if (cls.charAt(0) === "." && _.indexOf(el.className.split(" "), cls.substring(1)) >= 0) {
                     return el;
-                } else if (cls.indexOf("#") === 0 && el.id.toLowerCase() === cls.substring(1).toLowerCase()) {
+                } else if (cls.charAt(0) === "#" && el.id.toLowerCase() === cls.substring(1).toLowerCase()) {
                     return el;
                 } else if (el.tagName.toLowerCase() === cls.toLowerCase()) {
                     return el
@@ -327,6 +327,16 @@ _package("_", this, function () {
                 if (arr[i] == val) {
                     return i
                 }
+            }
+        },
+        makeMap: function (arr) {
+            var hash = {}
+            _.forEach(arr, function (t) {
+                hash[t] = true
+            })
+            return function (t) {
+                // return arr.indexOf(t) >= 0
+                return !!hash[t]
             }
         },
         //模板字符串，兼容ie

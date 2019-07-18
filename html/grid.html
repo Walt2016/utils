@@ -79,9 +79,8 @@
         var g = _.grid(data)
         _.append(".table",g)
 
-        var rs=data.rs
         for(var i=0;i<10;i++){
-            data.rs=data.rs.concat(rs)
+            data.data=data.data.concat(data.data)
         }
         
         data.fixedhead=true
