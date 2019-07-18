@@ -25,3 +25,9 @@ npm run pack
 npm install --save-dev style-loader css-loader
 加载图片
 npm install --save-dev file-loader
+
+加载本地数据
+npm install --save-dev csv-loader xml-loader
+npm WARN csv-loader@3.0.2 requires a peer of papaparse@^4.5.0 but none is installed. You must install peer dependencies yourself.
+npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@1.2.9 (node_modules\fsevents):
+npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@1.2.9: wanted {"os":"darwin","arch":"any"} (current: {"os":"win32","arch":"x64"})
