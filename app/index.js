@@ -6,6 +6,7 @@ var component=function(){
 
     // div.className="hello" //css.hello
     div.classList.add('hello');
+    return div
 }
 
 document.body.appendChild(component())
