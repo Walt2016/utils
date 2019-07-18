@@ -1,4 +1,4 @@
-import  css from  '../css/css.css'
+import  css from  '../css/index.css'
 
 var component=function(){
     var div=document.createElement("div")
