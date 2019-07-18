@@ -1,4 +1,4 @@
-import   '../css/css.css'
+import  css from  '../css/css.css'
 
 var component=function(){
     var div=document.createElement("div")
@@ -6,6 +6,7 @@ var component=function(){
 
     // div.className="hello" //css.hello
     div.classList.add('hello');
+    // div.className=css.hello
     return div
 }
 
