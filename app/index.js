@@ -8,4 +8,4 @@ var component=function(){
     div.classList.add('hello');
 }
 
-document.body.appendChild(component)
+document.body.appendChild(component())
