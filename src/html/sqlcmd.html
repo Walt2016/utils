@@ -171,7 +171,7 @@
 
 
 
-        var sqlParse = function (tbl, cols) {
+        var parseSQL = function (tbl, cols) {
             tbl = tbl || "test"
 
 
@@ -226,68 +226,7 @@
                     }
                 }
             })
-            // html.replace(/<tr>([\s\S]*?)<\/tr>/g, function (m, row) {
-            //     var vals = []
 
-            //     if (index === 0) { //第一行作为表字段
-            //         row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
-            //             flds.push(td)
-            //             columns.push({
-            //                 prop: td,
-            //                 label: td,
-            //                 type: "string"
-            //             });
-            //             // columns.push(JSON.stringify({
-            //             //     prop: td,
-            //             //     label: td,
-            //             //     type: "string"
-            //             // }))
-            //         });
-            //         // console.log(tbl)
-            //         var sql = _.strtpl("CREATE TABLE IF NOT EXISTS ${tbl}(${flds})", {
-            //             tbl: tbl,
-            //             flds: flds
-            //         })
-            //         console.log(sql)
-
-            //         sqlArr.push(sql)
-
-            //         // _.append(".tablestructure", JSON.stringify(columns))
-            //         // var tablestructure = _.query(".tablestructure")
-            //         // tablestructure.innerHTML = columns.join("\n")//JSON.stringify(columns)
-            //     } else {
-            //         var item = {}
-            //         var i = 0;
-            //         row.replace(/<td>([\s\S]*?)<\/td>/g, function (r, td) {
-            //             // if(defCols[columns[i].prop]){
-
-            //             // }
-            //             // vals.push("'" + td + "'")
-            //             // add(vals,td,defCols[columns[i].prop]||_.type(Number(td)) )
-
-            //             if (_.type(Number(td)) === "number") {
-            //                 vals.push(Number(td))
-            //                 columns[i].type = "number"
-            //             } else {
-            //                 vals.push("'" + td + "'")
-            //             }
-            //             item[columns[i].prop] = td
-            //             i++;
-            //         })
-
-
-
-            //         if (vals.length > 0) {
-            //             data.push(item)
-            //             sqlArr.push(_.strtpl("insert into ${tbl}(${flds}) values(${vals})", {
-            //                 tbl: tbl,
-            //                 flds: flds,
-            //                 vals: vals
-            //             }))
-            //         }
-            //     }
-            //     index++;
-            // })
             var textarea = _.query(".textarea")
             textarea.innerHTML = sqlArr.join(";\n")+";\n"
 
@@ -308,11 +247,8 @@
                     display: "flex"
                 })
 
-                // 
                 cleanHtmlAttr()
-
                 _.query("#cols_input").innerText = JSON.stringify(parseHeader())
-
             }
         })
 
@@ -340,11 +276,9 @@
         var closBtn = _.query("#closBtn")
         _.event(closBtn, {
             click: function (e) {
-
                 _.css(dialog, {
                     display: "none"
                 })
-
             }
         })
 
@@ -358,7 +292,7 @@
                 var tname = _.query("#tname_input").innerText;
                 var cols = _.query("#cols_input").innerText;
 
-                sqlParse(tname, cols)
+                parseSQL(tname, cols)
             }
         })
     </script>
