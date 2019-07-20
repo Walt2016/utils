@@ -31,3 +31,21 @@ npm install --save-dev csv-loader xml-loader
 npm WARN csv-loader@3.0.2 requires a peer of papaparse@^4.5.0 but none is installed. You must install peer dependencies yourself.
 npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@1.2.9 (node_modules\fsevents):
 npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@1.2.9: wanted {"os":"darwin","arch":"any"} (current: {"os":"win32","arch":"x64"})
+
+
+
+//向 HTML 动态添加 bundle
+npm install --save-dev html-webpack-plugin
+
+清理dist文件
+npm install clean-webpack-plugin --save-dev
+
+//web 服务器
+npm install --save-dev webpack-dev-server
+
+
+#vue
+
+npm install vue  --save
+npm install  vue-loader --save
+npm install vue-template-compiler -D
